@@ -6,7 +6,9 @@
 #
 # Le certificat HTTPS est fourni et renouvelé par Cloudflare.
 
-tunnel: ac9a7d1b-e6a8-4666-a38d-6ff1b4f03651
+# Le nom suffit : cloudflared retrouve l'identifiant dans le fichier
+# d'identifiants, qui n'est pas versionné.
+tunnel: youseal
 credentials-file: D:\YouSeal\deploy\tunnel-credentials.json
 
 # Pas de mise en tampon : les envois se font par blocs de 4 Mio et les

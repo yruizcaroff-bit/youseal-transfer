@@ -32,7 +32,7 @@ certificat HTTPS. L'adresse IP du domicile n'est jamais exposée.
 
 | Élément | Valeur |
 | --- | --- |
-| Tunnel | `youseal`, identifiant `ac9a7d1b-e6a8-4666-a38d-6ff1b4f03651` |
+| Tunnel | `youseal` (identifiant dans `tunnel-credentials.json`, non versionné) |
 | Configuration | `deploy\tunnel-config.yml` |
 | Domaines desservis | `youseal.site` et `www.youseal.site` |
 | Tâche **YouSeal** | le service Node, démarre à l'ouverture de session |
