@@ -70,24 +70,32 @@ function rsEncode(data, ecLength) {
 
 // --- Codes BCH (information de format et de version) ------------------------
 
-function bch(value, generator, generatorBits) {
-  let result = value;
-  const valueBits = generatorBits - 1;
-  for (let i = valueBits; i >= 0; i--) {
-    if (result & (1 << (i + generatorBits))) result ^= generator << i;
+/**
+ * Reste de la division polynomiale de `value` par `generator` dans GF(2).
+ *
+ * `dataBits` est le nombre de bits utiles en tete et `checkBits` le degre du
+ * generateur : on annule les bits de poids fort un a un, du plus haut au plus
+ * bas, et il ne subsiste que les bits de controle.
+ */
+function bchRemainder(value, generator, dataBits, checkBits) {
+  let rest = value;
+  for (let i = dataBits - 1; i >= 0; i--) {
+    if (rest & (1 << (i + checkBits))) rest ^= generator << i;
   }
-  return result;
+  return rest;
 }
 
 /** 15 bits : niveau de correction (L = 01) et numero de masque. */
 function formatBits(mask) {
   const data = (0b01 << 3) | mask;
-  return ((data << 10) | bch(data << 10, 0b10100110111, 11)) ^ 0b101010000010010;
+  const rest = bchRemainder(data << 10, 0b10100110111, 5, 10);
+  return ((data << 10) | rest) ^ 0b101010000010010;
 }
 
 /** 18 bits, uniquement a partir de la version 7. */
 function versionBits(version) {
-  return (version << 12) | bch(version << 12, 0b1111100100101, 13);
+  const rest = bchRemainder(version << 12, 0b1111100100101, 6, 12);
+  return (version << 12) | rest;
 }
 
 // --- Construction de la matrice ---------------------------------------------
@@ -362,8 +370,14 @@ function qrMatrix(text) {
   return best.matrix;
 }
 
-/** Rend le QR code sous forme de SVG autonome. */
-function qrSvg(text, { margin = 3, size = 168 } = {}) {
+/**
+ * Rend le QR code sous forme de SVG autonome.
+ *
+ * La marge de 4 modules est exigee par la norme : certains lecteurs refusent
+ * de decoder sans elle. La taille par defaut donne environ 5 pixels par module,
+ * en deca desquels un appareil photo de telephone peine a distinguer la trame.
+ */
+function qrSvg(text, { margin = 4, size = 240 } = {}) {
   const matrix = qrMatrix(text);
   const modules = matrix.length + margin * 2;
   const path = [];
@@ -373,9 +387,10 @@ function qrSvg(text, { margin = 3, size = 168 } = {}) {
     }
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${modules} ${modules}" `
-    + `width="${size}" height="${size}" role="img" aria-label="QR code du lien">`
+    + `width="${size}" height="${size}" role="img" aria-label="QR code du lien" `
+    + `shape-rendering="crispEdges">`
     + `<rect width="${modules}" height="${modules}" fill="#fff"/>`
-    + `<path d="${path.join('')}" fill="#14211a"/></svg>`;
+    + `<path d="${path.join('')}" fill="#000"/></svg>`;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
