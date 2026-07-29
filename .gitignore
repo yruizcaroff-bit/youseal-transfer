@@ -1,0 +1,5 @@
+storage/
+node_modules/
+*.log
+.env
+deploy/env.cmd

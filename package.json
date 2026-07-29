@@ -1,0 +1,17 @@
+{
+  "name": "youseal",
+  "version": "1.0.0",
+  "description": "Transfert de fichiers chiffre de bout en bout - Node.js sans dependances",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/run.js",
+    "clean": "node scripts/cleanup.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "private": true,
+  "license": "MIT"
+}

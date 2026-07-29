@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Statistiques — YouSeal</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="/">
+    <span class="mark">
+      <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+        <path d="M8 10V7.5a4 4 0 0 1 8 0V10" fill="none" stroke="currentColor"
+              stroke-width="2.2" stroke-linecap="round"/>
+        <rect x="5.5" y="10" width="13" height="9" rx="2" fill="currentColor"/>
+      </svg>
+    </span>
+    <span>You<b>Seal</b></span>
+  </a>
+  <a class="topbar-note" href="/">Envoyer des fichiers</a>
+</header>
+
+<main class="page prose">
+
+  <h1>Statistiques d'utilisation</h1>
+  <p class="lead">
+    Mises à jour en direct : les chiffres changent au moment même où un transfert est scellé
+    ou téléchargé, sans rechargement de la page.
+  </p>
+
+  <section class="stats" id="stats">
+    <div class="stats-head">
+      <span class="live"><i></i>En direct</span>
+      <span>Depuis le <span data-stat="since">—</span></span>
+    </div>
+
+    <div class="stats-grid">
+      <div><b data-stat="transfers">—</b><span>transferts scellés</span></div>
+      <div><b data-stat="files">—</b><span>fichiers envoyés</span></div>
+      <div><b data-stat="bytes">—</b><span>de données</span></div>
+      <div><b data-stat="downloads">—</b><span>téléchargements</span></div>
+    </div>
+
+    <p class="stats-note">
+      <b>En ce moment :</b>
+      <b data-stat="activeTransfers">—</b> transferts en ligne ·
+      <b data-stat="activeFiles">—</b> fichiers ·
+      <span data-stat="activeBytes">—</span> stockés ·
+      <b data-stat="watching">—</b> connexions ouvertes sur cette page
+    </p>
+  </section>
+
+  <h2>Comment ces chiffres sont obtenus</h2>
+  <p>
+    Le serveur tient quatre compteurs cumulés, incrémentés au moment où un transfert est
+    finalisé ou téléchargé, et trois jauges recalculées à chaque purge des transferts expirés.
+    Les valeurs sont poussées vers cette page par un flux d'évènements : aucune interrogation
+    répétée du serveur.
+  </p>
+
+  <h2>Ce qui n'est pas mesuré</h2>
+  <ul>
+    <li><b>Aucune adresse IP</b> et aucun journal de connexion ne sont conservés par l'application.</li>
+    <li><b>Aucun nom de fichier</b>, aucun message : le chiffrement de bout en bout les rend
+        illisibles pour le serveur, y compris pour ces statistiques.</li>
+    <li><b>Aucun suivi individuel</b> : ces compteurs sont des totaux, ils ne permettent pas de
+        relier une activité à une personne ou à un transfert précis.</li>
+  </ul>
+  <p>
+    Le volume affiché correspond aux données chiffrées telles qu'elles transitent, soit
+    28 octets de plus que le fichier d'origine par bloc de 4 Mio.
+  </p>
+
+  <p><a href="/conditions">Conditions d'utilisation</a> · <a href="/contact">Contact</a></p>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>YouSeal — transfert de fichiers auto-hébergé, chiffré de bout en bout.</span>
+    <nav>
+      <a href="/soutien">Soutien</a>
+      <a href="/statistiques">Statistiques</a>
+      <a href="/conditions">Conditions d'utilisation</a>
+      <a href="/contact">Contact</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="/common.js"></script>
+<script src="/stats.js"></script>
+</body>
+</html>

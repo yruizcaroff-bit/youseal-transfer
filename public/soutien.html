@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soutien — YouSeal</title>
+<meta name="description" content="YouSeal est gratuit, sans publicité, et le restera. La meilleure façon de le soutenir est d'en parler.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="/">
+    <span class="mark">
+      <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+        <path d="M8 10V7.5a4 4 0 0 1 8 0V10" fill="none" stroke="currentColor"
+              stroke-width="2.2" stroke-linecap="round"/>
+        <rect x="5.5" y="10" width="13" height="9" rx="2" fill="currentColor"/>
+      </svg>
+    </span>
+    <span>You<b>Seal</b></span>
+  </a>
+  <a class="topbar-note" href="/">Envoyer des fichiers</a>
+</header>
+
+<main class="page prose">
+
+  <h1>Soutenir YouSeal</h1>
+  <p class="lead">
+    YouSeal est gratuit, sans publicité, et le restera. Il n'y a rien à acheter,
+    rien à débloquer, aucun don à faire.
+  </p>
+
+  <h2>Pourquoi c'est gratuit</h2>
+  <p>
+    C'est un projet personnel, auto-hébergé, dont le coût se limite à un serveur déjà en place.
+    Les fichiers s'effacent d'eux-mêmes à l'expiration : rien ne s'accumule, donc rien ne coûte
+    durablement.
+  </p>
+  <p>
+    Surtout, il n'y a rien à monétiser. Le chiffrement a lieu dans votre navigateur : le serveur
+    ne peut lire ni vos fichiers, ni leurs noms, ni vos messages. Même en le voulant, il n'y
+    aurait aucune donnée à revendre ni à exploiter pour du ciblage publicitaire.
+  </p>
+
+  <h2>Ce que le service ne fera jamais</h2>
+  <ul>
+    <li><b>Aucune publicité</b>, aucun bandeau, aucune recommandation sponsorisée.</li>
+    <li><b>Aucun traqueur</b> : pas de cookie de mesure d'audience, pas de script tiers,
+        pas de bouton de réseau social qui vous suit.</li>
+    <li><b>Aucune revente de données</b>, ni analyse du contenu — c'est techniquement impossible.</li>
+    <li><b>Aucun compte obligatoire</b>, aucune adresse e-mail demandée pour envoyer un fichier.</li>
+    <li><b>Aucune fonctionnalité payante</b> ni limite artificielle destinée à pousser vers une
+        offre supérieure.</li>
+  </ul>
+
+  <h2>Comment aider</h2>
+  <p>
+    En parler. C'est la seule chose utile, et elle est gratuite : plus le service est utilisé,
+    plus il a de sens de le maintenir.
+  </p>
+
+  <div class="linkbox">
+    <input id="site-url" readonly aria-label="Adresse du site">
+    <button class="primary small" id="copy-url">Copier</button>
+  </div>
+
+  <div class="done-actions">
+    <button type="button" class="ghost" id="share-native" hidden>Partager…</button>
+    <a class="ghost" id="share-mail" href="#">Envoyer par e-mail</a>
+  </div>
+
+  <div class="qr" id="qr-site" hidden>
+    <div class="qr-code"></div>
+    <span>Scanner pour ouvrir le site sur un téléphone</span>
+  </div>
+
+  <h2>Autrement</h2>
+  <ul>
+    <li><b>Signaler un problème</b> ou proposer une amélioration via la
+        <a href="/contact">page de contact</a> : un bug corrigé profite à tout le monde.</li>
+    <li><b>Héberger votre propre instance.</b> YouSeal tient dans un dossier, sans aucune
+        dépendance à installer. Rien n'oblige à passer par ce serveur-ci.</li>
+  </ul>
+
+  <p><a href="/conditions">Conditions d'utilisation</a> · <a href="/statistiques">Statistiques</a></p>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>YouSeal — transfert de fichiers auto-hébergé, chiffré de bout en bout.</span>
+    <nav>
+      <a href="/soutien">Soutien</a>
+      <a href="/statistiques">Statistiques</a>
+      <a href="/conditions">Conditions d'utilisation</a>
+      <a href="/contact">Contact</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="/common.js"></script>
+<script src="/qr.js"></script>
+<script src="/soutien.js"></script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transfert — YouSeal</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="/">
+    <span class="mark">
+      <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+        <path d="M8 10V7.5a4 4 0 0 1 8 0V10" fill="none" stroke="currentColor"
+              stroke-width="2.2" stroke-linecap="round"/>
+        <rect x="5.5" y="10" width="13" height="9" rx="2" fill="currentColor"/>
+      </svg>
+    </span>
+    <span>You<b>Seal</b></span>
+  </a>
+  <a class="topbar-note" href="/">Envoyer des fichiers</a>
+</header>
+
+<main class="page">
+  <section class="card">
+
+    <!-- chargement -->
+    <div id="state-loading" class="state">
+      <div class="spinner"></div>
+      <span>Chargement du transfert…</span>
+    </div>
+
+    <!-- mot de passe -->
+    <div id="state-password" class="panel" hidden>
+      <h1 class="panel-title">Transfert protégé</h1>
+      <p class="hint">Saisissez le mot de passe communiqué par l'expéditeur.</p>
+      <label class="field">
+        <span>Mot de passe</span>
+        <input id="password" type="password" autocomplete="off">
+      </label>
+      <p class="error" id="password-error" hidden></p>
+      <button class="primary" id="unlock">Déverrouiller</button>
+    </div>
+
+    <!-- erreur -->
+    <div id="state-error" class="state" hidden>
+      <b id="error-title">Transfert indisponible</b>
+      <span id="error-text"></span>
+      <a class="ghost" href="/">Envoyer des fichiers</a>
+    </div>
+
+    <!-- contenu -->
+    <div id="state-content" class="panel" hidden>
+      <div>
+        <h1 class="panel-title" id="title">Fichiers partagés</h1>
+        <p class="hint" id="subtitle"></p>
+      </div>
+
+      <div class="message-box" id="message" hidden></div>
+
+      <div class="filelist" id="files"></div>
+
+      <button class="primary" id="download-all">Tout télécharger (ZIP)</button>
+
+      <div class="dl-meta">
+        <span id="meta-expiry"></span>
+        <span id="meta-downloads"></span>
+      </div>
+
+      <p class="hint" id="privacy" hidden>
+        Chiffré de bout en bout : le déchiffrement a lieu dans votre navigateur,
+        avec la clé contenue dans le lien. Le serveur n'y a jamais accès.
+      </p>
+    </div>
+
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>YouSeal — les fichiers sont supprimés automatiquement à l'expiration.</span>
+    <nav>
+      <a href="/soutien">Soutien</a>
+      <a href="/statistiques">Statistiques</a>
+      <a href="/conditions">Conditions d'utilisation</a>
+      <a href="/contact">Contact</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="/common.js"></script>
+<script src="/fdcrypto.js"></script>
+<script src="/zipstream.js"></script>
+<script src="/transfer.js"></script>
+</body>
+</html>

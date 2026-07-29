@@ -1,0 +1,26 @@
+# Reverse proxy HTTPS pour YouSeal.
+#
+# Caddy obtient et renouvelle seul le certificat Let's Encrypt : il faut que
+# youseal.site pointe vers cette machine et que les ports 80 et 443 lui soient
+# redirigés par la box, sinon la validation échoue.
+#
+#   caddy run --config Caddyfile
+#
+# Aucune limite de taille de corps de requête n'est imposée par défaut, et les
+# flux ne sont pas mis en tampon : indispensable pour les envois par blocs de
+# 4 Mio et pour le flux de statistiques en direct.
+
+youseal.site, www.youseal.site {
+	reverse_proxy 127.0.0.1:3000
+
+	encode zstd gzip
+
+	header {
+		# Le site ne charge que ses propres ressources : ni script, ni police,
+		# ni image d'origine tierce.
+		Content-Security-Policy "default-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'"
+		Referrer-Policy "no-referrer"
+		X-Content-Type-Options "nosniff"
+		Strict-Transport-Security "max-age=31536000"
+	}
+}
