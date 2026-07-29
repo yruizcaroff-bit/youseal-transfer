@@ -148,3 +148,21 @@ conclusions. Une date rafraîchie par un script ne dirait plus rien.
 
 Si vous ne souhaitez pas porter cet engagement, supprimez le paragraphe plutôt
 que de le laisser vieillir.
+
+## Purge en cas de saturation
+
+Passé **750 Go** occupés, les transferts les plus anciens sont effacés jusqu'à en
+libérer **50**, même s'ils n'ont pas expiré. Sans ce mécanisme, le service
+refuserait tout nouvel envoi une fois les 800 Go atteints, jusqu'à ce que les
+transferts expirent d'eux-mêmes.
+
+Réglable par `PRUNE_THRESHOLD` et `PRUNE_AMOUNT` dans `deploy\start.cmd`. Mettre
+l'un des deux à zéro désactive la purge.
+
+Chaque passage écrit dans le journal le nombre de transferts effacés et le volume
+libéré. L'ancienneté se compte à la date de dépôt : un transfert récent mais
+volumineux survivra à un ancien plus petit.
+
+**Cette suppression est annoncée** à l'article 5 des conditions d'utilisation.
+Si vous relevez le seuil ou désactivez la purge, la mention peut rester ; si vous
+la supprimez du code, retirez aussi le paragraphe.

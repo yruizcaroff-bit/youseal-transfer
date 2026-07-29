@@ -12,6 +12,7 @@ const store = require('./lib/store');
 const stats = require('./lib/stats');
 const limits = require('./lib/limits');
 const pairing = require('./lib/pairing');
+const prune = require('./lib/prune');
 const { createZipStream, computeZipSize } = require('./lib/zip');
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -210,6 +211,9 @@ async function createTransferRoute(req, res) {
     expiresAt: transfer.expiresAt,
     files: transfer.files.map((f) => ({ id: f.id, name: f.name, size: f.size })),
   });
+
+  // La purge parcourt tout le stockage : on ne fait pas attendre l'expediteur.
+  prune.pruneIfNeeded(store, stats).catch((err) => console.error('[purge]', err));
 }
 
 async function uploadFileRoute(req, res, url, id, fileId) {
@@ -681,6 +685,8 @@ server.headersTimeout = 60_000;
         if (n) console.log(`[nettoyage] ${n} transfert(s) expire(s) supprime(s)`);
         return stats.recomputeLive(store);
       })
+      .then(() => prune.pruneIfNeeded(store, stats))
+      .then(() => stats.recomputeLive(store))
       .catch((err) => console.error('[nettoyage]', err));
   }, config.cleanupIntervalMs).unref();
 

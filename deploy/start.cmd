@@ -21,6 +21,12 @@ rem Un fichier ne peut à lui seul dépasser 100 Go, ni un transfert 200 Go.
 set "MAX_FILE_SIZE=107374182400"
 set "MAX_TRANSFER_SIZE=214748364800"
 
+rem Purge d'urgence : passé 750 Go, les transferts les plus anciens sont
+rem effacés jusqu'à en libérer 50, même s'ils n'ont pas expiré. Sans cela, le
+rem service refuserait tout nouvel envoi une fois la capacité atteinte.
+set "PRUNE_THRESHOLD=805306368000"
+set "PRUNE_AMOUNT=53687091200"
+
 rem --- Secrets et surcharges locales (non versionné) -----------------------
 if exist "%~dp0env.cmd" call "%~dp0env.cmd"
 

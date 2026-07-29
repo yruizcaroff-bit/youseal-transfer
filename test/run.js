@@ -112,6 +112,18 @@ async function suite(name, fn, context) {
       ADMIN_TOKEN: 'jeton-de-test-moderation',
     });
     await suite('Limites d\'usage et modération', require('./limits.test.js'), { base: BASE, assert });
+    await stopServer(server);
+    server = null;
+
+    // --- serveur dont le stockage sature vite
+    server = await startServer({
+      STORAGE_DIR: path.join(storageDir, 'purge'),
+      MAX_STORAGE: '10000000',
+      PRUNE_THRESHOLD: '200000',
+      PRUNE_AMOUNT: '100000',
+      RATE_CREATE_PER_HOUR: '100',
+    });
+    await suite('Purge du stockage saturé', require('./prune.test.js'), { base: BASE, assert });
   } catch (err) {
     failed++;
     failures.push(err.message);
