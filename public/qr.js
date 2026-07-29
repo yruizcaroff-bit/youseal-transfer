@@ -181,13 +181,16 @@ function placeFormat(matrix, size, mask) {
   const bits = formatBits(mask);
   for (let i = 0; i < 15; i++) {
     const bit = (bits >> i) & 1;
-    // copie autour du motif superieur gauche
-    if (i < 6) matrix[8][i] = bit;
-    else if (i === 6) matrix[8][7] = bit;
+
+    // Premiere copie, en L autour du motif superieur gauche : les bits 0 a 5
+    // descendent la colonne 8, les bits 9 a 14 remontent la ligne 8.
+    if (i < 6) matrix[i][8] = bit;
+    else if (i === 6) matrix[7][8] = bit;
     else if (i === 7) matrix[8][8] = bit;
-    else if (i === 8) matrix[7][8] = bit;
-    else matrix[14 - i][8] = bit;
-    // copie de secours
+    else if (i === 8) matrix[8][7] = bit;
+    else matrix[8][14 - i] = bit;
+
+    // Seconde copie, scindee entre le bas et la droite.
     if (i < 8) matrix[size - 1 - i][8] = bit;
     else matrix[8][size - 15 + i] = bit;
   }

@@ -81,15 +81,29 @@ function decode(matrix) {
   const size = matrix.length;
   const version = (size - 17) / 4;
 
-  // masque : lu dans l'information de format en bas à gauche
-  let format = 0;
+  // Information de format, lue dans ses DEUX copies séparément.
+  // Un lecteur réel commence par celle du coin supérieur gauche ; ne vérifier
+  // que la seconde laisserait passer une première copie mal placée — c'est
+  // précisément le défaut qui rendait les codes illisibles.
+  let primary = 0;
+  let secondary = 0;
   for (let i = 0; i < 15; i++) {
-    const bit = i < 8 ? matrix[size - 1 - i][8] : matrix[8][size - 15 + i];
-    format |= bit << i;
+    let bit;
+    if (i < 6) bit = matrix[i][8];
+    else if (i === 6) bit = matrix[7][8];
+    else if (i === 7) bit = matrix[8][8];
+    else if (i === 8) bit = matrix[8][7];
+    else bit = matrix[8][14 - i];
+    primary |= bit << i;
+
+    const other = i < 8 ? matrix[size - 1 - i][8] : matrix[8][size - 15 + i];
+    secondary |= other << i;
   }
-  format ^= 0b101010000010010;
+
+  const format = primary ^ 0b101010000010010;
   const mask = (format >> 10) & 0b111;
   const ecLevel = (format >> 13) & 0b11;
+  const copiesMatch = primary === secondary;
 
   // lecture en zigzag
   const bits = [];
@@ -157,7 +171,7 @@ function decode(matrix) {
   }
 
   return {
-    version, mask, ecLevel, syndromesOk, mode,
+    version, mask, ecLevel, syndromesOk, mode, copiesMatch,
     text: Buffer.from(bytes).toString('utf8'),
   };
 }
@@ -198,6 +212,8 @@ module.exports = function run({ assert }) {
       `relecture identique — version ${read.version}, masque ${read.mask} (${label})`);
     assert(read.syndromesOk, `syndromes de correction nuls (version ${read.version})`);
     assert(read.ecLevel === 0b01, `niveau de correction L annonce (version ${read.version})`);
+    assert(read.copiesMatch,
+      `les deux copies de l'information de format concordent (version ${read.version})`);
   }
 
   // Invariants de structure sur un cas representatif.
