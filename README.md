@@ -78,11 +78,11 @@ Tout est écrit à la main, y compris ce qu'on importe d'ordinaire :
 ## Démarrage
 
 ```bash
-git clone https://github.com/<compte>/youseal.git
+git clone https://github.com/yruizcaroff-bit/youseal-transfer.git
 ```
 
 ```bash
-cd youseal && node server.js
+cd youseal-transfer && node server.js
 ```
 
 Puis <http://localhost:3000>.
