@@ -3,3 +3,6 @@ node_modules/
 *.log
 .env
 deploy/env.cmd
+deploy/ddns-password.txt
+deploy/ddns.log
+deploy/caddy.exe
