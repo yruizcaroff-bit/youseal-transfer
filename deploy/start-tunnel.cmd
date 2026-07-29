@@ -1,9 +1,9 @@
 @echo off
-rem Tunnel Cloudflare : expose le service sur Internet en HTTPS, sans ouvrir
-rem le moindre port sur la box. La connexion part d'ici vers Cloudflare.
+rem Tunnel Cloudflare nomme « youseal » : expose https://youseal.site sans
+rem ouvrir le moindre port sur la box. La connexion part d'ici vers Cloudflare,
+rem qui fournit et renouvelle le certificat HTTPS.
 rem
-rem L'adresse publique est tiree au hasard et change a chaque demarrage ;
-rem elle est ecrite dans tunnel.log.
+rem La configuration (domaines desservis) est dans tunnel-config.yml.
 
 cd /d "%~dp0"
-"%~dp0cloudflared.exe" tunnel --url http://127.0.0.1:3000 --no-autoupdate > "%~dp0tunnel.log" 2>&1
+"%~dp0cloudflared.exe" tunnel --no-autoupdate --config "%~dp0tunnel-config.yml" run youseal > "%~dp0tunnel.log" 2>&1

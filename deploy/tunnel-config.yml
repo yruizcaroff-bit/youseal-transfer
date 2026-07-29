@@ -1,0 +1,25 @@
+# Tunnel nommé « youseal ».
+#
+# cloudflared ouvre une connexion sortante vers Cloudflare, qui lui achemine
+# les visiteurs de youseal.site. Aucun port n'est ouvert sur la box, et
+# l'adresse IP du domicile n'est jamais exposée.
+#
+# Le certificat HTTPS est fourni et renouvelé par Cloudflare.
+
+tunnel: ac9a7d1b-e6a8-4666-a38d-6ff1b4f03651
+credentials-file: D:\YouSeal\deploy\tunnel-credentials.json
+
+# Pas de mise en tampon : les envois se font par blocs de 4 Mio et les
+# statistiques sont diffusées en flux continu.
+originRequest:
+  connectTimeout: 30s
+  noTLSVerify: false
+  disableChunkedEncoding: false
+
+ingress:
+  - hostname: youseal.site
+    service: http://127.0.0.1:3000
+  - hostname: www.youseal.site
+    service: http://127.0.0.1:3000
+  # Toute autre requête arrivant par ce tunnel est refusée.
+  - service: http_status:404

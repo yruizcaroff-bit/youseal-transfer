@@ -8,3 +8,7 @@ deploy/ddns.log
 deploy/caddy.exe
 deploy/cloudflared.exe
 deploy/tunnel.log
+deploy/cert.pem
+deploy/tunnel-credentials.json
+deploy/login.log
+deploy/login.err

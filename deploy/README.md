@@ -24,40 +24,34 @@ Stop-ScheduledTask -TaskName YouSeal ; Get-Process node | Stop-Process -Force
 
 Pour lancer à la main, en voyant les journaux : `deploy\start.cmd`.
 
-## En ligne par tunnel Cloudflare (configuration actuelle)
+## En ligne sur https://youseal.site
 
-Le site est exposé sur Internet **sans ouvrir le moindre port** : `cloudflared`
-établit une connexion sortante vers Cloudflare, qui lui renvoie les visiteurs et
-fournit le HTTPS. L'adresse IP personnelle reste masquée.
+Le site est exposé **sans ouvrir le moindre port** : `cloudflared` établit une
+connexion sortante vers Cloudflare, qui lui achemine les visiteurs et fournit le
+certificat HTTPS. L'adresse IP du domicile n'est jamais exposée.
 
-| Élément | État |
+| Élément | Valeur |
 | --- | --- |
-| Tâche **YouSeal-Tunnel** | démarre à l'ouverture de session |
-| Tâche **YouSeal-Caddy** | désactivée — Cloudflare fournit déjà le certificat |
-| Tâche **YouSeal-DDNS** | désactivée — inutile sans nom de domaine propre |
-| `TRUST_PROXY=1` | activé, pour lire l'adresse réelle du visiteur |
+| Tunnel | `youseal`, identifiant `ac9a7d1b-e6a8-4666-a38d-6ff1b4f03651` |
+| Configuration | `deploy\tunnel-config.yml` |
+| Domaines desservis | `youseal.site` et `www.youseal.site` |
+| Tâche **YouSeal** | le service Node, démarre à l'ouverture de session |
+| Tâche **YouSeal-Tunnel** | le tunnel, démarre à l'ouverture de session |
 
-**L'adresse publique change à chaque redémarrage du tunnel.** Pour connaître
-l'adresse du moment, double-cliquer sur `deploy\adresse.cmd`, ou :
+Trois fichiers de `deploy\` sont **secrets** et exclus du dépôt :
+`cert.pem`, `tunnel-credentials.json` et `env.cmd`. Perdre les deux premiers
+oblige à recréer le tunnel ; les diffuser permettrait à un tiers de détourner le
+trafic du domaine.
+
+Vérifier l'état du tunnel :
 
 ```powershell
-Select-String -Path D:\YouSeal\deploy\tunnel.log -Pattern "https://.*trycloudflare.com" | Select-Object -First 1
+Get-Content D:\YouSeal\deploy\tunnel.log -Tail 20
 ```
 
 Limite à connaître : les conditions du plan gratuit de Cloudflare voient d'un
 mauvais œil la distribution massive de gros fichiers. Pour un usage personnel,
 aucun problème.
-
-## Passer à une adresse fixe (youseal.site)
-
-Deux voies possibles :
-
-1. **Tunnel nommé Cloudflare** — créer un compte Cloudflare gratuit, y ajouter
-   le domaine, changer les serveurs DNS chez Namecheap, puis
-   `cloudflared tunnel login` et `cloudflared tunnel route dns`. Toujours aucun
-   port à ouvrir.
-2. **Redirection de ports + Caddy** — la méthode décrite ci-dessous, qui exige
-   l'accès à l'interface de la box.
 
 ## Rendre le site accessible depuis Internet (redirection de ports)
 
