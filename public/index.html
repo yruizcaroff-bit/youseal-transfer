@@ -6,7 +6,7 @@
 <title>YouSeal — Envoyer des fichiers</title>
 <meta name="description" content="Envoyez des fichiers scellés par un simple lien. Chiffré de bout en bout, sans compte.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/style.css?v=3">
+<link rel="stylesheet" href="/style.css?v=4">
 </head>
 <body>
 
@@ -85,6 +85,15 @@
             <input id="password" type="password" autocomplete="new-password"
                    placeholder="Accès libre si vide">
           </label>
+
+          <div class="field">
+            <label class="check">
+              <input id="burn" type="checkbox">
+              <span>Détruire après le téléchargement</span>
+            </label>
+            <p class="hint">Les fichiers sont effacés du serveur dès que le destinataire
+              les a récupérés. Il n'aura qu'une seule occasion de le faire.</p>
+          </div>
         </div>
       </details>
 
@@ -103,7 +112,8 @@
       </div>
       <p class="upload-current" id="upload-current"></p>
       <p class="error" id="upload-error" hidden></p>
-      <button class="ghost" id="cancel">Annuler l'envoi</button>
+      <!-- N'apparaît qu'en cas d'échec : sans lui, l'écran d'erreur serait sans issue. -->
+      <button class="ghost" id="cancel" hidden>Retour</button>
     </div>
 
     <!-- ÉTAPE 3 : terminé -------------------------------------------------- -->
@@ -161,10 +171,10 @@
   </div>
 </footer>
 
-<script src="/common.js?v=3"></script>
-<script src="/fdcrypto.js?v=3"></script>
-<script src="/qr.js?v=3"></script>
-<script src="/history.js?v=3"></script>
-<script src="/app.js?v=3"></script>
+<script src="/common.js?v=4"></script>
+<script src="/fdcrypto.js?v=4"></script>
+<script src="/qr.js?v=4"></script>
+<script src="/history.js?v=4"></script>
+<script src="/app.js?v=4"></script>
 </body>
 </html>

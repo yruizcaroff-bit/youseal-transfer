@@ -199,6 +199,7 @@ async function createTransferRoute(req, res) {
     password: body.password ? String(body.password) : null,
     expiryDays: body.expiryDays,
     maxDownloads: body.maxDownloads,
+    burnAfterReading: body.burnAfterReading,
   });
   stats.transferCreated(transfer);
 
@@ -387,6 +388,39 @@ async function countDownload(id) {
   });
 }
 
+/**
+ * Marque des fichiers comme recuperes et, en mode « destruction apres
+ * telechargement », efface le transfert des que tous l'ont ete.
+ *
+ * Appelee une fois le flux termine : supprimer un fichier en cours de lecture
+ * echouerait sous Windows. Une archive chiffree etant fabriquee par le
+ * navigateur, elle telecharge les fichiers un a un — d'ou le decompte par
+ * fichier plutot que par telechargement.
+ */
+async function markFetched(id, fileIds) {
+  const burned = await store.withTransferLock(id, async () => {
+    const fresh = await store.readTransfer(id);
+    if (!fresh) return null;
+
+    for (const file of fresh.files) {
+      if (fileIds.includes(file.id)) file.fetched = true;
+    }
+
+    if (!fresh.burnAfterReading || !fresh.files.every((f) => f.fetched)) {
+      await store.writeTransfer(fresh).catch(() => {});
+      return null;
+    }
+
+    await store.deleteTransfer(id);
+    return fresh;
+  });
+
+  if (burned) {
+    stats.transferRemoved(burned);
+    console.log(`[destruction] transfert ${id} efface apres telechargement`);
+  }
+}
+
 async function downloadFileRoute(req, res, url, id, fileId) {
   const transfer = await loadTransfer(res, id);
   if (!transfer) return;
@@ -445,7 +479,13 @@ async function downloadFileRoute(req, res, url, id, fileId) {
   res.writeHead(status, headers);
   if (req.method === 'HEAD') return res.end();
 
-  await pipeline(fs.createReadStream(target, { start, end }), res).catch(() => {});
+  let complete = true;
+  await pipeline(fs.createReadStream(target, { start, end }), res).catch(() => { complete = false; });
+
+  // Le fichier ne compte comme recupere que s'il a ete servi en entier.
+  if (complete && start === 0 && end === stat.size - 1) {
+    await markFetched(id, [fileId]);
+  }
 }
 
 async function downloadZipRoute(req, res, url, id) {
@@ -480,7 +520,10 @@ async function downloadZipRoute(req, res, url, id) {
     'cache-control': 'no-store',
   });
 
-  await pipeline(createZipStream(entries), res).catch(() => {});
+  let complete = true;
+  await pipeline(createZipStream(entries), res).catch(() => { complete = false; });
+
+  if (complete) await markFetched(id, transfer.files.map((f) => f.id));
 }
 
 // --- Routeur -----------------------------------------------------------------

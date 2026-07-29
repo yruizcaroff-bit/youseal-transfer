@@ -35,6 +35,7 @@ const ui = {
   current: $('#upload-current'),
   uploadError: $('#upload-error'),
   cancel: $('#cancel'),
+  burn: $('#burn'),
 
   shareLink: $('#share-link'),
   copy: $('#copy'),
@@ -319,6 +320,7 @@ ui.send.addEventListener('click', async () => {
   cancelled = false;
   uploading = true;
   hideError(ui.uploadError);
+  ui.cancel.hidden = true;
   showPanel('upload');
   updateProgress(null);
   ui.current.textContent = 'Génération de la clé…';
@@ -345,6 +347,7 @@ ui.send.addEventListener('click', async () => {
         password: ui.password.value || null,
         expiryDays: Number(ui.expiry.value),
         maxDownloads: Number(ui.maxDownloads.value) || null,
+        burnAfterReading: ui.burn.checked,
       }),
     });
 
@@ -389,21 +392,23 @@ ui.send.addEventListener('click', async () => {
       return;
     }
     showError(ui.uploadError, err.message);
-    ui.cancel.textContent = 'Retour';
+    ui.cancel.hidden = false;
   } finally {
     uploading = false;
   }
 });
 
+// Seule issue de l'écran d'erreur : on abandonne le transfert incomplet, qui
+// serait de toute façon purgé, et on revient au formulaire.
 ui.cancel.addEventListener('click', () => {
-  if (ui.cancel.textContent === 'Retour') {
-    ui.cancel.textContent = "Annuler l'envoi";
-    hideError(ui.uploadError);
-    showPanel('form');
-    return;
-  }
-  cancelled = true;
-  if (activeAbort) activeAbort.abort();
+  if (transfer) api(`/api/transfers/${transfer.id}`, { method: 'DELETE' }).catch(() => {});
+  transfer = null;
+  transferKey = null;
+  queue.forEach((item) => { item.uploaded = 0; item.done = false; item.serverId = null; });
+  ui.cancel.hidden = true;
+  hideError(ui.uploadError);
+  renderQueue();
+  showPanel('form');
 });
 
 // --- Ecran final -------------------------------------------------------------
@@ -420,9 +425,18 @@ ui.newTransfer.addEventListener('click', () => {
   ui.message.value = '';
   ui.password.value = '';
   ui.maxDownloads.value = '';
-  ui.cancel.textContent = "Annuler l'envoi";
+  ui.burn.checked = false;
+  ui.maxDownloads.disabled = false;
+  ui.cancel.hidden = true;
   renderQueue();
   showPanel('form');
+});
+
+// Les deux réglages se contrediraient : la destruction impose déjà une seule
+// récupération, un plafond distinct n'aurait pas de sens.
+ui.burn.addEventListener('change', () => {
+  ui.maxDownloads.disabled = ui.burn.checked;
+  if (ui.burn.checked) ui.maxDownloads.value = '';
 });
 
 ui.deleteTransfer.addEventListener('click', async () => {

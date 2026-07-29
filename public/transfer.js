@@ -131,11 +131,15 @@ function render(data) {
     location.href = accessToken ? `${base}?k=${encodeURIComponent(accessToken)}` : base;
   };
 
+  $('#burn-notice').hidden = !data.burnAfterReading;
+
   $('#meta-expiry').textContent =
     `Expire le ${formatDate(data.expiresAt)} (${remainingLabel(data.expiresAt)})`;
-  $('#meta-downloads').textContent = data.maxDownloads
-    ? `${data.downloads} / ${data.maxDownloads} téléchargements`
-    : `${data.downloads} téléchargement${data.downloads > 1 ? 's' : ''}`;
+  $('#meta-downloads').textContent = data.burnAfterReading
+    ? 'Détruit après téléchargement'
+    : data.maxDownloads
+      ? `${data.downloads} / ${data.maxDownloads} téléchargements`
+      : `${data.downloads} téléchargement${data.downloads > 1 ? 's' : ''}`;
   $('#privacy').hidden = !data.encrypted;
 
   show('content');

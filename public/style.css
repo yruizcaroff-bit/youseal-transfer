@@ -180,6 +180,25 @@ input:focus, textarea:focus, select:focus {
 }
 input::placeholder, textarea::placeholder { color: #9aa79f; }
 
+.check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.check input { width: 15px; height: 15px; flex: none; margin: 0; accent-color: var(--green); }
+
+.burn-notice {
+  padding: 12px 14px;
+  border: 1px solid #e6cfa8;
+  border-left: 2px solid #b8860b;
+  background: #fdf8ee;
+  font-size: 13.5px;
+  color: #5c4813;
+}
+.burn-notice b { color: #3d2f0a; }
+
 .options { border-top: 1px solid var(--border); padding-top: 14px; }
 .options > summary {
   cursor: pointer;

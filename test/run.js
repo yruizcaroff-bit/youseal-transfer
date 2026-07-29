@@ -94,6 +94,8 @@ async function suite(name, fn, context) {
     await suite('API (transferts non chiffrés)', require('./api.test.js'), { base: BASE, assert });
     await suite('Chiffrement de bout en bout', require('./crypto.test.js'),
       { base: BASE, storageDir, assert });
+    await suite('Destruction après téléchargement', require('./burn.test.js'),
+      { base: BASE, storageDir, assert });
     await stopServer(server);
     server = null;
 
