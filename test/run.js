@@ -96,6 +96,8 @@ async function suite(name, fn, context) {
       { base: BASE, storageDir, assert });
     await suite('Destruction après téléchargement', require('./burn.test.js'),
       { base: BASE, storageDir, assert });
+    await suite('Appairage par code court', require('./pairing.test.js'),
+      { base: BASE, assert });
     await stopServer(server);
     server = null;
 

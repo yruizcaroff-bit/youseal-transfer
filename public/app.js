@@ -302,6 +302,43 @@ function showQr(url) {
   }
 }
 
+function showFingerprint(value) {
+  const block = $('#fingerprint');
+  block.querySelector('b').textContent = value;
+  block.hidden = false;
+}
+
+// --- Ouverture sur un autre appareil ------------------------------------------
+
+let pairSession = null;
+
+function resetPairing(transferId, keyText) {
+  if (pairSession) pairSession.stop();
+  pairSession = null;
+  $('#pair-box').hidden = true;
+  $('#pair-start').hidden = false;
+  $('#pair-start').disabled = false;
+
+  $('#pair-start').onclick = () => {
+    $('#pair-start').hidden = true;
+    $('#pair-box').hidden = false;
+    $('#pair-code').textContent = '······';
+    $('#pair-status').textContent = 'Demande du code…';
+
+    pairSession = pairOffer(transferId, keyText, (etat) => {
+      if (etat.code) $('#pair-code').textContent = etat.code;
+      const messages = {
+        attente: 'Saisissez ce code sur l\'autre appareil, rubrique « J\'ai un code ».',
+        transmis: 'Appareil connecté — le transfert s\'ouvre là-bas.',
+        expire: 'Code expiré. Fermez et rouvrez pour en obtenir un nouveau.',
+        erreur: 'L\'appairage a échoué.',
+      };
+      $('#pair-status').textContent = messages[etat.statut] || '';
+      if (etat.statut !== 'attente') $('#pair-code').classList.toggle('done', etat.statut === 'transmis');
+    });
+  };
+}
+
 function showPanel(name) {
   ui.panelForm.hidden = name !== 'form';
   ui.panelUpload.hidden = name !== 'upload';
@@ -376,6 +413,8 @@ ui.send.addEventListener('click', async () => {
     ui.shareLink.value = transfer.url;
     ui.openLink.href = transfer.url;
     showQr(transfer.url);
+    showFingerprint(await fdFingerprint(transferKey));
+    resetPairing(transfer.id, await fdExportKey(transferKey));
     ui.doneSub.textContent =
       `${queue.length} fichier${queue.length > 1 ? 's' : ''} · ${formatBytes(totalSize())} · ${remainingLabel(done.expiresAt)}`;
     showPanel('done');
@@ -453,6 +492,42 @@ ui.deleteTransfer.addEventListener('click', async () => {
 
 window.addEventListener('beforeunload', (e) => {
   if (uploading) { e.preventDefault(); e.returnValue = ''; }
+});
+
+// --- Saisie d'un code venu d'un autre appareil --------------------------------
+
+const redeemInput = $('#redeem-code');
+const redeemError = $('#redeem-error');
+
+async function redeem() {
+  const code = redeemInput.value.toUpperCase().replace(/[^0-9A-Z]/g, '');
+  redeemError.hidden = true;
+  if (code.length !== 6) {
+    redeemError.textContent = 'Le code compte six caractères.';
+    redeemError.hidden = false;
+    return;
+  }
+
+  const bouton = $('#redeem-go');
+  bouton.disabled = true;
+  bouton.textContent = 'Connexion…';
+  try {
+    const adresse = await pairRedeem(code, (etat) => {
+      bouton.textContent = etat.statut === 'attente-cle' ? 'Réception…' : 'Connexion…';
+    });
+    location.href = adresse;
+  } catch (err) {
+    redeemError.textContent = err.message;
+    redeemError.hidden = false;
+    bouton.disabled = false;
+    bouton.textContent = 'Ouvrir';
+  }
+}
+
+$('#redeem-go').addEventListener('click', redeem);
+redeemInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') redeem(); });
+redeemInput.addEventListener('input', () => {
+  redeemInput.value = redeemInput.value.toUpperCase().replace(/[^0-9A-Z]/g, '');
 });
 
 // --- Initialisation ----------------------------------------------------------

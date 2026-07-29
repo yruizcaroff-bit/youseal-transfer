@@ -6,7 +6,7 @@
 <title>YouSeal — Envoyer des fichiers</title>
 <meta name="description" content="Envoyez des fichiers scellés par un simple lien. Chiffré de bout en bout, sans compte.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/style.css?v=4">
+<link rel="stylesheet" href="/style.css?v=5">
 </head>
 <body>
 
@@ -36,6 +36,19 @@
 
     <!-- ÉTAPE 1 : sélection ------------------------------------------------ -->
     <div class="panel" id="panel-form">
+      <details class="options" id="redeem">
+        <summary>J'ai un code</summary>
+        <div class="fields">
+          <p class="hint">Saisissez les six caractères affichés sur l'autre appareil.</p>
+          <div class="linkbox">
+            <input id="redeem-code" maxlength="7" autocomplete="off" autocapitalize="characters"
+                   spellcheck="false" placeholder="XXXXXX" aria-label="Code à six caractères">
+            <button type="button" class="primary small" id="redeem-go">Ouvrir</button>
+          </div>
+          <p class="error" id="redeem-error" hidden></p>
+        </div>
+      </details>
+
       <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Ajouter des fichiers">
         <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
           <path d="M12 15V3m0 0L8 7m4-4 4 4" fill="none" stroke="currentColor"
@@ -126,9 +139,23 @@
         <button id="copy" class="primary small">Copier</button>
       </div>
 
+      <div class="fingerprint" id="fingerprint" hidden>
+        <span>Empreinte de la clé</span>
+        <b></b>
+        <small>Dictez-la au destinataire : s'il voit la même, le lien n'a pas été altéré.</small>
+      </div>
+
       <div class="qr" id="qr" hidden>
         <div class="qr-code"></div>
         <span>Scanner pour ouvrir sur un téléphone</span>
+      </div>
+
+      <div class="pairing" id="pairing">
+        <button type="button" class="ghost" id="pair-start">Ouvrir sur un autre appareil</button>
+        <div id="pair-box" hidden>
+          <b class="pair-code" id="pair-code">······</b>
+          <p class="hint" id="pair-status"></p>
+        </div>
       </div>
 
       <p class="hint">
@@ -164,6 +191,7 @@
     <span>YouSeal — transfert de fichiers auto-hébergé, chiffré de bout en bout.</span>
     <nav>
       <a href="/soutien">Soutien</a>
+      <a href="/transparence">Transparence</a>
       <a href="/statistiques">Statistiques</a>
       <a href="/conditions">Conditions d'utilisation</a>
       <a href="/contact">Contact</a>
@@ -171,10 +199,11 @@
   </div>
 </footer>
 
-<script src="/common.js?v=4"></script>
-<script src="/fdcrypto.js?v=4"></script>
-<script src="/qr.js?v=4"></script>
-<script src="/history.js?v=4"></script>
-<script src="/app.js?v=4"></script>
+<script src="/common.js?v=5"></script>
+<script src="/fdcrypto.js?v=5"></script>
+<script src="/qr.js?v=5"></script>
+<script src="/pair.js?v=5"></script>
+<script src="/history.js?v=5"></script>
+<script src="/app.js?v=5"></script>
 </body>
 </html>

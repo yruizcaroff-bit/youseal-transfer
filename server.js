@@ -11,6 +11,7 @@ const config = require('./lib/config');
 const store = require('./lib/store');
 const stats = require('./lib/stats');
 const limits = require('./lib/limits');
+const pairing = require('./lib/pairing');
 const { createZipStream, computeZipSize } = require('./lib/zip');
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -330,6 +331,7 @@ async function deleteTransferRoute(req, res, url, id) {
   await store.deleteTransfer(id);
   stats.transferRemoved(transfer);
   if (moderator) {
+    stats.moderationCounted();
     console.log(`[moderation] transfert ${id} supprime (${transfer.files.length} fichier(s), `
       + `cree le ${transfer.createdAt})`);
   }
@@ -526,9 +528,73 @@ async function downloadZipRoute(req, res, url, id) {
   if (complete) await markFetched(id, transfer.files.map((f) => f.id));
 }
 
+// --- Appairage par code court ------------------------------------------------
+
+async function createPairingRoute(req, res) {
+  const gate = limits.hit(`pair:${limits.clientIp(req)}`, 30, 3600_000);
+  if (!gate.ok) {
+    return failRate(res, gate.retryAfter,
+      `Trop de codes demandes. Reessayez dans ${minutesLabel(gate.retryAfter)}.`);
+  }
+
+  const body = await readJsonBody(req, 8192);
+  if (!store.isValidId(body.transferId)) return fail(res, 400, 'Transfert invalide.');
+  if (!pairing.isKeyMaterial(body.senderPublicKey)) return fail(res, 400, 'Cle publique invalide.');
+
+  // Inutile d'ouvrir un rendez-vous vers un transfert qui n'existe pas.
+  const transfer = await store.readTransfer(body.transferId);
+  if (!transfer || store.isExpired(transfer)) return fail(res, 404, 'Transfert introuvable.');
+
+  const result = pairing.create(body);
+  if (result.error) return fail(res, 503, result.error);
+  sendJson(res, 201, result);
+}
+
+async function claimPairingRoute(req, res, code) {
+  // Six caracteres, donc devinables sans plafond sur les essais.
+  const gate = limits.hit(`claim:${limits.clientIp(req)}`, 20, 10 * 60_000);
+  if (!gate.ok) {
+    return failRate(res, gate.retryAfter,
+      `Trop d'essais. Reessayez dans ${minutesLabel(gate.retryAfter)}.`);
+  }
+  if (!pairing.isValidCode(code)) return fail(res, 400, 'Code invalide.');
+
+  const body = await readJsonBody(req, 8192);
+  if (!pairing.isKeyMaterial(body.publicKey)) return fail(res, 400, 'Cle publique invalide.');
+
+  const result = pairing.claim(code, body.publicKey);
+  if (result.error) return fail(res, 404, result.error);
+  sendJson(res, 200, result);
+}
+
+function pairingStatusRoute(req, res, url, code) {
+  const result = pairing.status(code, url.searchParams.get('token'));
+  if (!result) return fail(res, 404, 'Appairage inconnu ou expire.');
+  sendJson(res, 200, result);
+}
+
+async function deliverPairingRoute(req, res, code) {
+  const body = await readJsonBody(req, 8192);
+  if (!pairing.isKeyMaterial(body.wrappedKey)) return fail(res, 400, 'Paquet invalide.');
+  const result = pairing.deliver(code, body.token, body.wrappedKey);
+  if (result.error) return fail(res, 404, result.error);
+  sendJson(res, 200, result);
+}
+
+function collectPairingRoute(req, res, url, code) {
+  const result = pairing.collect(code, url.searchParams.get('token'));
+  if (!result) return fail(res, 404, 'Appairage inconnu ou expire.');
+  sendJson(res, 200, result);
+}
+
 // --- Routeur -----------------------------------------------------------------
 
 const ROUTES = [
+  { method: 'POST', re: /^\/api\/pairings$/, handler: (req, res) => createPairingRoute(req, res) },
+  { method: 'POST', re: /^\/api\/pairings\/([^/]+)\/claim$/, handler: (req, res, url, m) => claimPairingRoute(req, res, m[1]) },
+  { method: 'GET', re: /^\/api\/pairings\/([^/]+)$/, handler: (req, res, url, m) => pairingStatusRoute(req, res, url, m[1]) },
+  { method: 'PUT', re: /^\/api\/pairings\/([^/]+)\/key$/, handler: (req, res, url, m) => deliverPairingRoute(req, res, m[1]) },
+  { method: 'GET', re: /^\/api\/pairings\/([^/]+)\/key$/, handler: (req, res, url, m) => collectPairingRoute(req, res, url, m[1]) },
   { method: 'POST', re: /^\/api\/transfers$/, handler: (req, res) => createTransferRoute(req, res) },
   { method: 'GET', re: /^\/api\/transfers\/([^/]+)$/, handler: (req, res, url, m) => getTransferRoute(req, res, url, m[1]) },
   { method: 'DELETE', re: /^\/api\/transfers\/([^/]+)$/, handler: (req, res, url, m) => deleteTransferRoute(req, res, url, m[1]) },
@@ -576,10 +642,10 @@ async function handle(req, res) {
 
   if (pathname === '/' || pathname === '/index.html') return serveStatic(res, 'index.html');
   if (/^\/t\/[a-f0-9]+\/?$/.test(pathname)) return serveStatic(res, 'transfer.html');
-  if (/^\/(conditions|contact|statistiques|soutien)\/?$/.test(pathname)) {
+  if (/^\/(conditions|contact|statistiques|soutien|transparence)\/?$/.test(pathname)) {
     return serveStatic(res, `${pathname.replace(/\//g, '')}.html`);
   }
-  if (/^\/(app|transfer|common|fdcrypto|zipstream|sw|stats|history|soutien|qr)\.js$|^\/style\.css$|^\/favicon\.svg$|^\/og\.png$/.test(pathname)) {
+  if (/^\/(app|transfer|common|fdcrypto|zipstream|sw|stats|history|soutien|qr|pair|uptime)\.js$|^\/style\.css$|^\/favicon\.svg$|^\/og\.png$/.test(pathname)) {
     return serveStatic(res, pathname.slice(1));
   }
 
@@ -607,6 +673,7 @@ server.headersTimeout = 60_000;
 
   await stats.init(store);
   limits.start();
+  pairing.start();
 
   setInterval(() => {
     store.cleanup()

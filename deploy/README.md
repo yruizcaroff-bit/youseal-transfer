@@ -135,3 +135,16 @@ L'identifiant est la partie de l'adresse située entre `/t/` et le `#`.
   l'adresse personnelle.
 - **Ne pas supprimer `storage\.secret`** : les liens protégés par mot de passe
   cesseraient d'être déverrouillables.
+
+## La déclaration de transparence
+
+`public/transparence.html` contient une déclaration datée : à ce jour, aucune
+réquisition judiciaire reçue. **Elle se met à jour à la main**, environ une fois
+par mois, en changeant simplement la date.
+
+Ne l'automatisez jamais. Tout son intérêt tient à ce que son absence de mise à
+jour fasse signal : si la date cesse d'avancer, le lecteur en tire ses propres
+conclusions. Une date rafraîchie par un script ne dirait plus rien.
+
+Si vous ne souhaitez pas porter cet engagement, supprimez le paragraphe plutôt
+que de le laisser vieillir.

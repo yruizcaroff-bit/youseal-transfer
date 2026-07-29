@@ -133,6 +133,14 @@ function render(data) {
 
   $('#burn-notice').hidden = !data.burnAfterReading;
 
+  if (cryptoKey) {
+    fdFingerprint(cryptoKey).then((empreinte) => {
+      const block = $('#fingerprint');
+      block.querySelector('b').textContent = empreinte;
+      block.hidden = false;
+    }).catch(() => {});
+  }
+
   $('#meta-expiry').textContent =
     `Expire le ${formatDate(data.expiresAt)} (${remainingLabel(data.expiresAt)})`;
   $('#meta-downloads').textContent = data.burnAfterReading

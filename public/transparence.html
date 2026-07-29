@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transparence — YouSeal</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/style.css?v=5">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="/">
+    <span class="mark">
+      <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+        <path d="M8 10V7.5a4 4 0 0 1 8 0V10" fill="none" stroke="currentColor"
+              stroke-width="2.2" stroke-linecap="round"/>
+        <rect x="5.5" y="10" width="13" height="9" rx="2" fill="currentColor"/>
+      </svg>
+    </span>
+    <span>You<b>Seal</b></span>
+  </a>
+  <a class="topbar-note" href="/">Envoyer des fichiers</a>
+</header>
+
+<main class="page prose">
+
+  <h1>Transparence</h1>
+  <p class="lead">
+    Un service qui promet la confidentialité doit pouvoir être vérifié, pas seulement cru.
+    Cette page rassemble ce qui est mesurable.
+  </p>
+
+  <section class="stats" id="stats">
+    <div class="stats-head">
+      <span class="live"><i></i>En direct</span>
+      <span>Service ouvert depuis le <span data-stat="since">—</span></span>
+    </div>
+    <div class="stats-grid">
+      <div><b data-stat="moderated">—</b><span>retraits après signalement</span></div>
+      <div><b data-stat="transfers">—</b><span>transferts au total</span></div>
+      <div><b data-stat="activeTransfers">—</b><span>en ligne en ce moment</span></div>
+      <div><b id="uptime">—</b><span>sans interruption</span></div>
+    </div>
+  </section>
+
+  <h2>Ce que l'exploitant peut voir</h2>
+  <p>
+    Le chiffrement a lieu dans votre navigateur et la clé ne figure que dans le lien, après
+    le <b>#</b>, partie que les navigateurs n'envoient jamais au serveur. Il en découle une
+    liste courte et vérifiable :
+  </p>
+  <ul>
+    <li><b>Visible :</b> le nombre de fichiers d'un transfert, leur taille chiffrée, les dates
+        de dépôt et d'expiration, le nombre de téléchargements.</li>
+    <li><b>Illisible :</b> le contenu des fichiers, leurs noms, leurs types, et le message
+        d'accompagnement — tous chiffrés avec une clé que le serveur n'a jamais eue.</li>
+    <li><b>Inexistant :</b> aucun journal de connexion, aucune adresse IP conservée, aucun
+        compte, aucun cookie de mesure d'audience, aucun script tiers sur le site.</li>
+  </ul>
+
+  <h2>Ce qui peut être fait sur signalement</h2>
+  <p>
+    Un transfert signalé peut être <b>supprimé</b>, et c'est tout. Son contenu ne peut pas être
+    consulté, ni transmis à un tiers, ni restauré ensuite. Le compteur ci-dessus indique combien
+    de retraits ont eu lieu depuis l'ouverture du service.
+  </p>
+  <p>
+    Cette impossibilité est technique, pas contractuelle : elle ne dépend pas de la bonne volonté
+    de l'exploitant, et une modification du code ne pourrait pas s'appliquer rétroactivement aux
+    transferts déjà déposés.
+  </p>
+
+  <h2>Engagement</h2>
+  <!--
+    Déclaration à mettre à jour à la main, tous les mois environ.
+    C'est son ABSENCE de mise à jour qui fait signal : si la date cesse d'avancer,
+    c'est qu'il s'est passé quelque chose qui ne peut pas être annoncé ici.
+    Ne jamais automatiser cette date, cela lui retirerait toute valeur.
+  -->
+  <p class="notice-canary">
+    Au <b>30 juillet 2026</b>, ce service n'a reçu aucune réquisition judiciaire, aucune demande
+    d'accès à des données, et aucune injonction de mettre en place une quelconque surveillance.
+    Cette déclaration est mise à jour manuellement. Si sa date cesse d'avancer, considérez qu'elle
+    n'est plus vraie.
+  </p>
+
+  <h2>Vérifier par soi-même</h2>
+  <ul>
+    <li>Les scripts de la page ne sont pas minifiés : le chiffrement est lisible dans
+        <code>/fdcrypto.js</code>, tel qu'il s'exécute.</li>
+    <li>Les outils de développement du navigateur, onglet Réseau, montrent que le fragment du
+        lien n'est jamais transmis, et que les fichiers partent déjà chiffrés.</li>
+    <li>L'<b>empreinte de la clé</b>, affichée à l'envoi comme à la réception, permet aux deux
+        parties de constater qu'elles parlent bien du même lien.</li>
+  </ul>
+
+  <p><a href="/conditions">Conditions d'utilisation</a> · <a href="/contact">Contact</a> ·
+     <a href="/statistiques">Statistiques d'utilisation</a></p>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>YouSeal — transfert de fichiers auto-hébergé, chiffré de bout en bout.</span>
+    <nav>
+      <a href="/soutien">Soutien</a>
+      <a href="/transparence">Transparence</a>
+      <a href="/statistiques">Statistiques</a>
+      <a href="/conditions">Conditions d'utilisation</a>
+      <a href="/contact">Contact</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="/common.js?v=5"></script>
+<script src="/stats.js?v=5"></script>
+<script src="/uptime.js?v=5"></script>
+</body>
+</html>

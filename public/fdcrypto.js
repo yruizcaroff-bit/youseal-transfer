@@ -89,6 +89,27 @@ function fdImportKey(text) {
   return crypto.subtle.importKey('raw', raw, 'AES-GCM', true, ['encrypt', 'decrypt']);
 }
 
+// --- empreinte de la cle -----------------------------------------------------
+
+/**
+ * Six caracteres derives de l'empreinte SHA-256 de la cle.
+ *
+ * Affichee des deux cotes, elle permet de verifier de vive voix que le lien
+ * recu est bien celui qui a ete envoye : un lien altere en chemin donnerait une
+ * empreinte differente. L'alphabet exclut 0, O, 1 et I, indistinguables aussi
+ * bien a l'oral qu'a l'ecran.
+ */
+const FD_FINGERPRINT_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+
+async function fdFingerprint(key) {
+  const raw = new Uint8Array(await crypto.subtle.exportKey('raw', key));
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', raw));
+  let out = '';
+  // 256 est un multiple exact de 32 : le modulo ne biaise pas la repartition.
+  for (let i = 0; i < 6; i++) out += FD_FINGERPRINT_ALPHABET[digest[i] % 32];
+  return `${out.slice(0, 3)}-${out.slice(3)}`;
+}
+
 // --- blocs -------------------------------------------------------------------
 
 function fdAad(fileId, index) {
@@ -212,7 +233,7 @@ if (typeof module !== 'undefined' && module.exports) {
     fdChunkCount, fdChunkSize, fdEncryptedSize, fdEncryptedOffset, fdChunkAtOffset,
     fdToBase64Url, fdFromBase64Url,
     fdGenerateKey, fdExportKey, fdImportKey,
-    fdEncryptChunk, fdDecryptChunk,
+    fdEncryptChunk, fdDecryptChunk, fdFingerprint,
     fdEncryptManifest, fdDecryptManifest,
     fdDecryptStream, fdStreamFrom, fdConcat,
   };
