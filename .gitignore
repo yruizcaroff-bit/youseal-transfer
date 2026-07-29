@@ -6,3 +6,5 @@ deploy/env.cmd
 deploy/ddns-password.txt
 deploy/ddns.log
 deploy/caddy.exe
+deploy/cloudflared.exe
+deploy/tunnel.log

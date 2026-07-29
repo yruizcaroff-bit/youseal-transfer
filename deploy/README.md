@@ -24,7 +24,42 @@ Stop-ScheduledTask -TaskName YouSeal ; Get-Process node | Stop-Process -Force
 
 Pour lancer à la main, en voyant les journaux : `deploy\start.cmd`.
 
-## Rendre le site accessible depuis Internet
+## En ligne par tunnel Cloudflare (configuration actuelle)
+
+Le site est exposé sur Internet **sans ouvrir le moindre port** : `cloudflared`
+établit une connexion sortante vers Cloudflare, qui lui renvoie les visiteurs et
+fournit le HTTPS. L'adresse IP personnelle reste masquée.
+
+| Élément | État |
+| --- | --- |
+| Tâche **YouSeal-Tunnel** | démarre à l'ouverture de session |
+| Tâche **YouSeal-Caddy** | désactivée — Cloudflare fournit déjà le certificat |
+| Tâche **YouSeal-DDNS** | désactivée — inutile sans nom de domaine propre |
+| `TRUST_PROXY=1` | activé, pour lire l'adresse réelle du visiteur |
+
+**L'adresse publique change à chaque redémarrage du tunnel.** Pour connaître
+l'adresse du moment, double-cliquer sur `deploy\adresse.cmd`, ou :
+
+```powershell
+Select-String -Path D:\YouSeal\deploy\tunnel.log -Pattern "https://.*trycloudflare.com" | Select-Object -First 1
+```
+
+Limite à connaître : les conditions du plan gratuit de Cloudflare voient d'un
+mauvais œil la distribution massive de gros fichiers. Pour un usage personnel,
+aucun problème.
+
+## Passer à une adresse fixe (youseal.site)
+
+Deux voies possibles :
+
+1. **Tunnel nommé Cloudflare** — créer un compte Cloudflare gratuit, y ajouter
+   le domaine, changer les serveurs DNS chez Namecheap, puis
+   `cloudflared tunnel login` et `cloudflared tunnel route dns`. Toujours aucun
+   port à ouvrir.
+2. **Redirection de ports + Caddy** — la méthode décrite ci-dessous, qui exige
+   l'accès à l'interface de la box.
+
+## Rendre le site accessible depuis Internet (redirection de ports)
 
 Quatre étapes, dans cet ordre. **Le HTTPS n'est pas optionnel** : sans lui, le
 navigateur désactive WebCrypto et le Service Worker, et l'application ne
