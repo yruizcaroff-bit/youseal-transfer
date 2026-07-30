@@ -195,7 +195,13 @@ function hideError(node) {
 
 // --- Glisser-deposer ---------------------------------------------------------
 
-ui.dropzone.addEventListener('click', () => ui.input.click());
+// Le test sur la cible est un garde-fou : si un champ de fichier se retrouvait
+// un jour à l'intérieur de la zone, son clic remonterait jusqu'ici et ouvrirait
+// le sélecteur de fichiers par-dessus celui qu'on venait de demander.
+ui.dropzone.addEventListener('click', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  ui.input.click();
+});
 ui.dropzone.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ui.input.click(); }
 });
