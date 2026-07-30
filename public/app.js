@@ -14,6 +14,7 @@ const MAX_RETRIES = 3;
 const ui = {
   dropzone: $('#dropzone'),
   input: $('#file-input'),
+  dirInput: $('#dir-input'),
   filelist: $('#filelist'),
   totals: $('#totals'),
   totalsText: $('#totals-text'),
@@ -61,15 +62,69 @@ const abortError = () => Object.assign(new Error('Envoi annulé.'), { aborted: t
 
 // --- Selection des fichiers --------------------------------------------------
 
-function addFiles(fileList) {
-  for (const file of fileList) {
-    const duplicate = queue.some(
-      (item) => item.file.name === file.name && item.file.size === file.size
-    );
+/**
+ * Ajoute des fichiers à la file.
+ *
+ * `path` est le chemin relatif au dossier déposé — « photos/été/plage.jpg ».
+ * Il sert de nom dans le manifeste, ce qui permet à l'archive de reconstituer
+ * l'arborescence chez le destinataire.
+ */
+function addFiles(items) {
+  for (const entree of items) {
+    const file = entree.file || entree;
+    const path = entree.path || file.webkitRelativePath || file.name;
+    const duplicate = queue.some((item) => item.path === path && item.file.size === file.size);
     if (duplicate) continue;
-    queue.push({ key: `f${++seq}`, file, serverId: null, uploaded: 0, done: false });
+    queue.push({ key: `f${++seq}`, file, path, serverId: null, uploaded: 0, done: false });
   }
   renderQueue();
+}
+
+/**
+ * Parcourt ce qui a été déposé et en extrait les fichiers, dossiers compris.
+ *
+ * `readEntries` ne rend les enfants que par paquets : il faut le rappeler
+ * jusqu'à ce qu'il ne renvoie plus rien, sinon un dossier de plus d'une
+ * centaine d'éléments se retrouve tronqué sans le moindre message.
+ */
+async function collectDropped(dataTransfer) {
+  const racines = [...dataTransfer.items]
+    .filter((item) => item.kind === 'file')
+    .map((item) => (item.webkitGetAsEntry ? item.webkitGetAsEntry() : null))
+    .filter(Boolean);
+
+  // Navigateur sans accès à l'arborescence : on se rabat sur les fichiers seuls.
+  if (!racines.length) return [...dataTransfer.files].map((file) => ({ file, path: file.name }));
+
+  const trouves = [];
+
+  const lireDossier = async (reader) => {
+    const lot = [];
+    for (;;) {
+      const paquet = await new Promise((res, rej) => reader.readEntries(res, rej));
+      if (!paquet.length) return lot;
+      lot.push(...paquet);
+    }
+  };
+
+  const descendre = async (entry, prefixe) => {
+    if (entry.isFile) {
+      const file = await new Promise((res, rej) => entry.file(res, rej));
+      trouves.push({ file, path: prefixe + entry.name });
+      return;
+    }
+    if (entry.isDirectory) {
+      const enfants = await lireDossier(entry.createReader());
+      for (const enfant of enfants) {
+        await descendre(enfant, `${prefixe + entry.name}/`);
+      }
+    }
+  };
+
+  for (const racine of racines) {
+    try { await descendre(racine, ''); } catch { /* dossier illisible : ignoré */ }
+  }
+  return trouves;
 }
 
 function removeFile(key) {
@@ -94,7 +149,7 @@ function renderQueue() {
       </div>
       <button class="icon-btn" type="button" title="Retirer" aria-label="Retirer">&times;</button>
       <div class="bar"><i></i></div>`;
-    row.querySelector('.name').textContent = item.file.name;
+    row.querySelector('.name').textContent = item.path;
     row.querySelector('.icon-btn').addEventListener('click', () => removeFile(item.key));
     ui.filelist.appendChild(row);
   }
@@ -115,7 +170,7 @@ function checkLimits() {
   const tooBig = queue.find((item) => fdEncryptedSize(item.file.size) > limits.maxFileSize);
   if (tooBig) {
     return showError(ui.formError,
-      `« ${tooBig.file.name} » dépasse la limite de ${formatBytes(limits.maxFileSize)} par fichier.`);
+      `« ${tooBig.path} » dépasse la limite de ${formatBytes(limits.maxFileSize)} par fichier.`);
   }
   if (queue.reduce((s, i) => s + fdEncryptedSize(i.file.size), 0) > limits.maxTransferSize) {
     return showError(ui.formError,
@@ -149,6 +204,14 @@ ui.input.addEventListener('change', () => {
   ui.input.value = '';
 });
 
+// Le choix d'un dossier passe par un champ distinct : `webkitdirectory` et la
+// sélection multiple de fichiers ne cohabitent pas dans le même élément.
+$('#pick-folder').addEventListener('click', () => ui.dirInput.click());
+ui.dirInput.addEventListener('change', () => {
+  addFiles(ui.dirInput.files); // chaque fichier porte son webkitRelativePath
+  ui.dirInput.value = '';
+});
+
 for (const type of ['dragenter', 'dragover']) {
   document.addEventListener(type, (e) => {
     if (!e.dataTransfer?.types.includes('Files')) return;
@@ -163,8 +226,9 @@ for (const type of ['dragleave', 'drop']) {
     ui.dropzone.classList.remove('is-over');
   });
 }
-document.addEventListener('drop', (e) => {
-  if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files);
+document.addEventListener('drop', async (e) => {
+  if (!e.dataTransfer) return;
+  addFiles(await collectDropped(e.dataTransfer));
 });
 
 ui.clearAll.addEventListener('click', () => { queue = []; renderQueue(); });
@@ -278,9 +342,9 @@ async function prepareQueue() {
     item.compressed = false;
 
     if (!compresser || item.file.size > COMPRESSION_MAX) continue;
-    if (!fdCompressible(item.file.name, item.file.type)) continue;
+    if (!fdCompressible(item.path, item.file.type)) continue;
 
-    ui.current.textContent = `Compression de ${item.file.name}…`;
+    ui.current.textContent = `Compression de ${item.path}…`;
     try {
       const octets = await fdCompress(item.file);
       // Un gain inférieur à 5 % ne vaut pas la peine d'être décompressé ensuite.
@@ -364,8 +428,8 @@ function updateProgress(current) {
 
   if (current) {
     ui.current.textContent = current.done
-      ? `${current.file.name} — envoyé`
-      : `Chiffrement et envoi de ${current.file.name}…`;
+      ? `${current.path} — envoyé`
+      : `Chiffrement et envoi de ${current.path}…`;
     const row = ui.filelist.querySelector(`[data-key="${current.key}"]`);
     if (row) {
       row.querySelector('.bar i').style.width =
@@ -460,7 +524,7 @@ ui.send.addEventListener('click', async () => {
       message: ui.message.value.trim(),
       chunk: transferChunk,
       files: queue.map((item) => ({
-        name: item.file.name,
+        name: item.path,
         type: item.file.type || 'application/octet-stream',
         size: item.file.size,
         stored: item.stored,

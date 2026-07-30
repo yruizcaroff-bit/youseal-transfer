@@ -195,7 +195,9 @@ function zipName() {
 }
 
 async function download(selection, mode) {
-  const filename = mode === 'zip' ? zipName() : selection[0].name;
+  // Un chemin relatif ne fait pas un nom de fichier : on n'en garde que la
+  // dernière partie. L'arborescence, elle, ne survit que dans l'archive.
+  const filename = mode === 'zip' ? zipName() : selection[0].name.split('/').pop();
 
   if (await ensureWorker()) {
     const id = crypto.randomUUID();

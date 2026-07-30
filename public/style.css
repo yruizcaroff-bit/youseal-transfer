@@ -600,3 +600,5 @@ button { font: inherit; cursor: pointer; }
   color: var(--muted);
 }
 .theme-toggle:hover { color: var(--green); border-color: var(--green); }
+
+.pick-folder { margin: -8px 0 0; text-align: center; }

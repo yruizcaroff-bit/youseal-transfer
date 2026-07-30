@@ -110,6 +110,29 @@ module.exports = async function run({ base, assert }) {
     await fetch(`${base}/api/transfers/${t.id}`, { method: 'DELETE', headers: owner });
   }
 
+  // --- l'arborescence d'un dossier déposé doit survivre à l'archive
+  const zip = require('../public/zipstream.js');
+  const arbre = [
+    { name: 'projet/src/index.js', size: 10 },
+    { name: 'projet/src/lib/util.js', size: 20 },
+    { name: 'projet/LISEZ-MOI.txt', size: 30 },
+    { name: 'projet/../evasion.txt', size: 40 },
+  ];
+  const corps = [Buffer.alloc(10, 1), Buffer.alloc(20, 2), Buffer.alloc(30, 3), Buffer.alloc(40, 4)];
+
+  const archive = Buffer.from(await new Response(
+    zip.fdCreateZipStream(arbre, (entry, i) => new ReadableStream({
+      start(c) { c.enqueue(corps[i]); c.close(); },
+    }))).arrayBuffer());
+
+  const brut = archive.toString('latin1');
+  assert(brut.includes('projet/src/index.js'), 'le chemin d\'un sous-dossier est conservé');
+  assert(brut.includes('projet/src/lib/util.js'), 'un second niveau aussi');
+  assert(!brut.includes('..'), 'les remontées « .. » sont retirées du chemin');
+  assert(brut.includes('projet/evasion.txt'),
+    'un chemin qui tente de remonter est ramené dans l\'arborescence');
+  assert(archive.subarray(0, 2).toString() === 'PK', 'archive valide');
+
   // Un découpage différent de celui annoncé ne doit rien donner de lisible.
   const cle = await fd.fdGenerateKey();
   const bloc = await fd.fdEncryptChunk(cle, 'x', 0, Buffer.from('abc'));

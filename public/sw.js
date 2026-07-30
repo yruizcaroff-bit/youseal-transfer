@@ -14,7 +14,7 @@
 // Le numero de version doit suivre celui des pages : sans lui, ces scripts
 // arrivent depuis le cache du reseau de diffusion et peuvent etre en retard
 // d'une version sur le worker qui les importe.
-importScripts('/fdcrypto.js?v=9', '/zipstream.js?v=9');
+importScripts('/fdcrypto.js?v=10', '/zipstream.js?v=10');
 
 const jobs = new Map();
 

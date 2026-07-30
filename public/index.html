@@ -6,8 +6,8 @@
 <title>YouSeal — Envoyer des fichiers</title>
 <meta name="description" content="Envoyez des fichiers scellés par un simple lien. Chiffré de bout en bout, sans compte.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/style.css?v=9">
-<script src="/theme.js?v=9"></script>
+<link rel="stylesheet" href="/style.css?v=10">
+<script src="/theme.js?v=10"></script>
 </head>
 <body>
 
@@ -60,10 +60,16 @@
           <path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" fill="none"
                 stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
         </svg>
-        <strong>Glissez vos fichiers ici</strong>
+        <strong>Glissez vos fichiers ou vos dossiers ici</strong>
         <span>ou cliquez pour parcourir</span>
         <input type="file" id="file-input" multiple hidden>
+        <!-- Un même champ ne peut pas proposer les deux : d'où le second. -->
+        <input type="file" id="dir-input" webkitdirectory hidden>
       </div>
+
+      <p class="pick-folder">
+        <button type="button" class="link-btn" id="pick-folder">Choisir un dossier…</button>
+      </p>
 
       <div class="filelist" id="filelist" hidden></div>
 
@@ -213,11 +219,11 @@
   </div>
 </footer>
 
-<script src="/common.js?v=9"></script>
-<script src="/fdcrypto.js?v=9"></script>
-<script src="/qr.js?v=9"></script>
-<script src="/pair.js?v=9"></script>
-<script src="/history.js?v=9"></script>
-<script src="/app.js?v=9"></script>
+<script src="/common.js?v=10"></script>
+<script src="/fdcrypto.js?v=10"></script>
+<script src="/qr.js?v=10"></script>
+<script src="/pair.js?v=10"></script>
+<script src="/history.js?v=10"></script>
+<script src="/app.js?v=10"></script>
 </body>
 </html>
