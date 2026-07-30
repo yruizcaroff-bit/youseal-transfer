@@ -98,6 +98,8 @@ async function suite(name, fn, context) {
       { base: BASE, storageDir, assert });
     await suite('Appairage par code court', require('./pairing.test.js'),
       { base: BASE, assert });
+    await suite('Découpage variable et compression', require('./chunk-compress.test.js'),
+      { base: BASE, assert });
     await stopServer(server);
     server = null;
 

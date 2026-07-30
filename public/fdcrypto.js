@@ -19,42 +19,62 @@
  * (importScripts) et par les tests Node.
  */
 
-const FD_CHUNK = 4 * 1024 * 1024; // taille d'un bloc en clair
+const FD_CHUNK = 4 * 1024 * 1024; // taille d'un bloc en clair, par defaut
 const FD_IV_LEN = 12;
 const FD_TAG_LEN = 16;
 const FD_OVERHEAD = FD_IV_LEN + FD_TAG_LEN; // 28 octets ajoutes par bloc
 
+// Bornes de la taille de bloc adaptative. En dessous, les allers-retours
+// dominent ; au-dessus, une coupure fait perdre trop de travail et la memoire
+// du navigateur souffre.
+const FD_CHUNK_MIN = 512 * 1024;
+const FD_CHUNK_MAX = 16 * 1024 * 1024;
+
+/**
+ * La taille de bloc est choisie par l'expediteur puis inscrite dans le
+ * manifeste : le destinataire doit retrouver exactement le meme decoupage.
+ * Toutes les fonctions ci-dessous l'acceptent en dernier argument et
+ * retombent sur la valeur par defaut, ce qui preserve les anciens transferts.
+ */
+function fdChunk(chunk) {
+  const value = Number(chunk);
+  return Number.isFinite(value) && value >= FD_CHUNK_MIN && value <= FD_CHUNK_MAX
+    ? value
+    : FD_CHUNK;
+}
+
 /** Nombre de blocs pour un fichier de `size` octets (un fichier vide en a un). */
-function fdChunkCount(size) {
-  return Math.max(1, Math.ceil(size / FD_CHUNK));
+function fdChunkCount(size, chunk) {
+  return Math.max(1, Math.ceil(size / fdChunk(chunk)));
 }
 
 /** Taille en clair du bloc numero `index`. */
-function fdChunkSize(size, index) {
-  return Math.min(FD_CHUNK, Math.max(0, size - index * FD_CHUNK));
+function fdChunkSize(size, index, chunk) {
+  const c = fdChunk(chunk);
+  return Math.min(c, Math.max(0, size - index * c));
 }
 
 /** Taille totale du fichier une fois chiffre. */
-function fdEncryptedSize(size) {
-  return size + FD_OVERHEAD * fdChunkCount(size);
+function fdEncryptedSize(size, chunk) {
+  return size + FD_OVERHEAD * fdChunkCount(size, chunk);
 }
 
 /** Position, dans le fichier chiffre, du debut du bloc `index`. */
-function fdEncryptedOffset(size, index) {
+function fdEncryptedOffset(size, index, chunk) {
   let offset = 0;
-  for (let i = 0; i < index; i++) offset += FD_OVERHEAD + fdChunkSize(size, i);
+  for (let i = 0; i < index; i++) offset += FD_OVERHEAD + fdChunkSize(size, i, chunk);
   return offset;
 }
 
 /** Dernier bloc entierement recu a partir du nombre d'octets chiffres presents. */
-function fdChunkAtOffset(size, encryptedOffset) {
+function fdChunkAtOffset(size, encryptedOffset, chunk) {
   let offset = 0;
-  for (let i = 0; i < fdChunkCount(size); i++) {
-    const next = offset + FD_OVERHEAD + fdChunkSize(size, i);
+  for (let i = 0; i < fdChunkCount(size, chunk); i++) {
+    const next = offset + FD_OVERHEAD + fdChunkSize(size, i, chunk);
     if (next > encryptedOffset) return { index: i, offset };
     offset = next;
   }
-  return { index: fdChunkCount(size), offset };
+  return { index: fdChunkCount(size, chunk), offset };
 }
 
 // --- base64url ---------------------------------------------------------------
@@ -87,6 +107,41 @@ function fdImportKey(text) {
   const raw = fdFromBase64Url(text);
   if (raw.length !== 32) return Promise.reject(new Error('Cle invalide.'));
   return crypto.subtle.importKey('raw', raw, 'AES-GCM', true, ['encrypt', 'decrypt']);
+}
+
+// --- compression (facultative) -----------------------------------------------
+
+/*
+ * Compresser avant de chiffrer, jamais l'inverse : du chiffre est
+ * indistinguable de l'aleatoire et ne se compresse pas.
+ *
+ * Le gain porte sur le reseau, seul goulot reel du service. Il est nul, voire
+ * negatif, sur les formats deja compresses — d'ou la liste ci-dessous.
+ *
+ * Contrepartie assumee : le taux de compression obtenu renseigne indirectement
+ * sur la nature du contenu. C'est pourquoi l'option reste au choix de
+ * l'expediteur plutot qu'activee d'office.
+ */
+const FD_DEJA_COMPRESSE =
+  /\.(jpe?g|png|gif|webp|avif|heic|heif|mp4|m4v|mkv|avi|mov|webm|wmv|mp3|m4a|aac|ogg|opus|flac|wma|zip|rar|7z|gz|tgz|xz|bz2|zst|br|lz4|pdf|docx|xlsx|pptx|odt|ods|odp|epub|apk|jar|woff2?|dmg|iso)$/i;
+
+/** Un fichier merite-t-il d'etre compresse ? */
+function fdCompressible(name, type = '') {
+  if (FD_DEJA_COMPRESSE.test(String(name))) return false;
+  // Les types image/, video/ et audio/ sont compresses sauf exception rare.
+  if (/^(image|video|audio)\//i.test(type) && !/svg|bmp|wav|aiff?/i.test(type)) return false;
+  return typeof CompressionStream === 'function';
+}
+
+/** Compresse un Blob et renvoie les octets obtenus. */
+async function fdCompress(blob) {
+  const flux = blob.stream().pipeThrough(new CompressionStream('deflate-raw'));
+  return new Uint8Array(await new Response(flux).arrayBuffer());
+}
+
+/** Remet un flux compresse dans son etat d'origine. */
+function fdDecompressStream(readable) {
+  return readable.pipeThrough(new DecompressionStream('deflate-raw'));
 }
 
 // --- empreinte de la cle -----------------------------------------------------
@@ -189,14 +244,14 @@ function fdConcat(a, b) {
  * @param {ReadableStream<Uint8Array>} body
  * @returns {AsyncGenerator<Uint8Array>} texte clair
  */
-async function* fdDecryptStream(key, fileId, size, body) {
+async function* fdDecryptStream(key, fileId, size, body, chunk) {
   const reader = body.getReader();
   let buffer = new Uint8Array(0);
   let ended = false;
-  const total = fdChunkCount(size);
+  const total = fdChunkCount(size, chunk);
 
   for (let index = 0; index < total; index++) {
-    const needed = FD_OVERHEAD + fdChunkSize(size, index);
+    const needed = FD_OVERHEAD + fdChunkSize(size, index, chunk);
     while (buffer.length < needed) {
       if (ended) throw new Error('Flux chiffre incomplet.');
       const { value, done } = await reader.read();
@@ -229,7 +284,8 @@ function fdStreamFrom(iterator) {
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
-    FD_CHUNK, FD_IV_LEN, FD_TAG_LEN, FD_OVERHEAD,
+    FD_CHUNK, FD_CHUNK_MIN, FD_CHUNK_MAX, FD_IV_LEN, FD_TAG_LEN, FD_OVERHEAD,
+    fdChunk, fdCompressible, fdCompress, fdDecompressStream,
     fdChunkCount, fdChunkSize, fdEncryptedSize, fdEncryptedOffset, fdChunkAtOffset,
     fdToBase64Url, fdFromBase64Url,
     fdGenerateKey, fdExportKey, fdImportKey,

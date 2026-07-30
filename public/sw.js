@@ -11,7 +11,10 @@
  * dans le fichier de destination.
  */
 
-importScripts('/fdcrypto.js', '/zipstream.js');
+// Le numero de version doit suivre celui des pages : sans lui, ces scripts
+// arrivent depuis le cache du reseau de diffusion et peuvent etre en retard
+// d'une version sur le worker qui les importe.
+importScripts('/fdcrypto.js?v=8', '/zipstream.js?v=8');
 
 const jobs = new Map();
 
@@ -42,7 +45,13 @@ function cipherUrl(job, fileId) {
 async function plainStream(job, entry) {
   const res = await fetch(cipherUrl(job, entry.fileId));
   if (!res.ok) throw new Error(`Telechargement impossible (${res.status}).`);
-  return fdStreamFrom(fdDecryptStream(job.key, entry.fileId, entry.size, res.body));
+
+  // `stored` est ce qui a ete chiffre ; `size` est la taille rendue au visiteur,
+  // apres decompression eventuelle.
+  const stored = entry.stored ?? entry.size;
+  const clair = fdStreamFrom(
+    fdDecryptStream(job.key, entry.fileId, stored, res.body, job.chunk));
+  return entry.compressed ? fdDecompressStream(clair) : clair;
 }
 
 async function respond(job) {

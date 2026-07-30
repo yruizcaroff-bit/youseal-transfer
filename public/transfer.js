@@ -22,7 +22,8 @@ const view = {
 
 let accessToken = null;
 let cryptoKey = null;
-let entries = [];        // { fileId, name, size, type }
+let entries = [];        // { fileId, name, size, stored, compressed, type }
+let transferChunk;       // découpage choisi par l'expéditeur, lu dans le manifeste
 let workerReady = null;
 
 function show(name) {
@@ -67,12 +68,20 @@ async function load() {
     try {
       cryptoKey = await fdImportKey(keyText);
       const manifest = await fdDecryptManifest(cryptoKey, data.manifest);
-      entries = data.files.map((file, i) => ({
-        fileId: file.id,
-        name: manifest.files[i]?.name || `fichier-${i + 1}`,
-        size: manifest.files[i]?.size ?? 0,
-        type: manifest.files[i]?.type || 'application/octet-stream',
-      }));
+      transferChunk = manifest.chunk;
+      entries = data.files.map((file, i) => {
+        const decrit = manifest.files[i] || {};
+        return {
+          fileId: file.id,
+          name: decrit.name || `fichier-${i + 1}`,
+          size: decrit.size ?? 0,
+          // `stored` n'existe que depuis la compression : sans lui, ce qui a été
+          // chiffré est le fichier lui-même.
+          stored: decrit.stored ?? decrit.size ?? 0,
+          compressed: Boolean(decrit.compressed),
+          type: decrit.type || 'application/octet-stream',
+        };
+      });
       data.message = manifest.message || '';
       data.totalSize = entries.reduce((sum, e) => sum + e.size, 0);
     } catch {
@@ -81,7 +90,8 @@ async function load() {
     }
   } else {
     entries = data.files.map((file) => ({
-      fileId: file.id, name: file.name, size: file.size, type: file.type,
+      fileId: file.id, name: file.name, size: file.size,
+      stored: file.size, compressed: false, type: file.type,
     }));
   }
 
@@ -198,7 +208,11 @@ async function download(selection, mode) {
         key: cryptoKey,
         mode,
         filename,
-        entries: selection.map((e) => ({ fileId: e.fileId, name: e.name, size: e.size })),
+        chunk: transferChunk,
+        entries: selection.map((e) => ({
+          fileId: e.fileId, name: e.name, size: e.size,
+          stored: e.stored, compressed: e.compressed,
+        })),
       },
     });
     const frame = document.createElement('iframe');
@@ -241,7 +255,11 @@ async function plainStream(entry) {
   const base = `/api/transfers/${transferId}/files/${entry.fileId}/download`;
   const res = await fetch(accessToken ? `${base}?k=${encodeURIComponent(accessToken)}` : base);
   if (!res.ok) throw new Error(`téléchargement impossible (${res.status})`);
-  return fdStreamFrom(fdDecryptStream(cryptoKey, entry.fileId, entry.size, res.body));
+
+  // Ce qui a été chiffré, c'est `stored` : le fichier, ou sa version compressée.
+  const clair = fdStreamFrom(
+    fdDecryptStream(cryptoKey, entry.fileId, entry.stored, res.body, transferChunk));
+  return entry.compressed ? fdDecompressStream(clair) : clair;
 }
 
 // --- Deverrouillage ----------------------------------------------------------

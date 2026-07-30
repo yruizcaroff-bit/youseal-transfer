@@ -36,6 +36,7 @@ const ui = {
   uploadError: $('#upload-error'),
   cancel: $('#cancel'),
   burn: $('#burn'),
+  compress: $('#compress'),
 
   shareLink: $('#share-link'),
   copy: $('#copy'),
@@ -49,6 +50,7 @@ let queue = [];          // { key, file, serverId, uploaded (octets en clair), d
 let limits = null;
 let transfer = null;     // { id, ownerToken, url }
 let transferKey = null;  // CryptoKey AES-256-GCM
+let transferChunk = FD_CHUNK; // taille de bloc retenue pour ce transfert
 let activeAbort = null;
 let uploading = false;
 let cancelled = false;
@@ -223,34 +225,111 @@ async function serverOffset(item) {
   }
 }
 
-/** Chiffre puis envoie un fichier, bloc par bloc, avec reprise sur coupure. */
+// --- Taille de bloc et compression -------------------------------------------
+
+const DEBIT_CLE = 'youseal.debit';
+
+/**
+ * Taille de bloc choisie d'après le débit observé lors des envois précédents.
+ *
+ * Elle doit être connue avant la création du transfert, puisque la taille
+ * chiffrée en dépend : on se fie donc à la mesure de la dernière fois plutôt
+ * que d'ajuster en cours de route. Sur une liaison rapide, de gros blocs
+ * suppriment des allers-retours ; sur une liaison lente, de petits blocs font
+ * perdre moins de travail à la moindre coupure.
+ */
+function chooseChunk() {
+  let debit = 0;
+  try { debit = Number(localStorage.getItem(DEBIT_CLE)) || 0; } catch { /* mode privé */ }
+
+  if (!debit) return FD_CHUNK;                    // première fois : 4 Mio
+  if (debit < 1_000_000) return FD_CHUNK / 4;     // moins de 1 Mo/s  -> 1 Mio
+  if (debit < 5_000_000) return FD_CHUNK;         // jusqu'à 5 Mo/s   -> 4 Mio
+  if (debit < 20_000_000) return FD_CHUNK * 2;    // jusqu'à 20 Mo/s  -> 8 Mio
+  return FD_CHUNK_MAX;                            // au-delà          -> 16 Mio
+}
+
+function rememberDebit(octets, ms) {
+  if (ms < 500 || octets < 1_000_000) return; // trop court pour être significatif
+  const mesure = (octets / ms) * 1000;
+  try {
+    const ancien = Number(localStorage.getItem(DEBIT_CLE)) || mesure;
+    // Moyenne glissante : une mesure isolée ne doit pas tout emporter.
+    localStorage.setItem(DEBIT_CLE, String(Math.round(ancien * 0.5 + mesure * 0.5)));
+  } catch { /* mode privé */ }
+}
+
+/**
+ * Prépare ce qui sera réellement transmis : le fichier tel quel, ou sa version
+ * compressée si l'option est cochée et que le format s'y prête.
+ *
+ * La compression a lieu avant la création du transfert, car le serveur doit
+ * connaître les tailles à l'avance. Elle est donc limitée aux fichiers d'une
+ * taille raisonnable : au-delà, le résultat ne tiendrait pas en mémoire.
+ */
+const COMPRESSION_MAX = 256 * 1024 * 1024;
+
+async function prepareQueue() {
+  const compresser = ui.compress.checked;
+
+  for (const item of queue) {
+    item.payload = item.file;
+    item.stored = item.file.size;
+    item.compressed = false;
+
+    if (!compresser || item.file.size > COMPRESSION_MAX) continue;
+    if (!fdCompressible(item.file.name, item.file.type)) continue;
+
+    ui.current.textContent = `Compression de ${item.file.name}…`;
+    try {
+      const octets = await fdCompress(item.file);
+      // Un gain inférieur à 5 % ne vaut pas la peine d'être décompressé ensuite.
+      if (octets.length < item.file.size * 0.95) {
+        item.payload = new Blob([octets]);
+        item.stored = octets.length;
+        item.compressed = true;
+      }
+    } catch {
+      // Compression indisponible ou en échec : on envoie le fichier tel quel.
+    }
+  }
+}
+
+/**
+ * Chiffre puis envoie un fichier, bloc par bloc, avec reprise sur coupure.
+ *
+ * Ce qui circule est `item.payload` — le fichier lui-même, ou sa version
+ * compressée. Le découpage suit `transferChunk`, inscrit dans le manifeste pour
+ * que le destinataire retrouve exactement les mêmes frontières.
+ */
 async function uploadItem(item) {
-  const size = item.file.size;
-  const chunks = fdChunkCount(size);
+  const size = item.stored;
+  const chunks = fdChunkCount(size, transferChunk);
   let index = 0;
   let offset = 0;
   let attempts = 0;
 
   const rewindTo = (encryptedBytes) => {
-    const at = fdChunkAtOffset(size, encryptedBytes);
+    const at = fdChunkAtOffset(size, encryptedBytes, transferChunk);
     index = at.index;
     offset = at.offset;
-    item.uploaded = Math.min(index * FD_CHUNK, size);
+    item.uploaded = Math.min(index * transferChunk, size);
     updateProgress(item);
   };
 
   while (index < chunks) {
     if (cancelled) throw abortError();
 
-    const start = index * FD_CHUNK;
-    const slice = await item.file.slice(start, start + fdChunkSize(size, index)).arrayBuffer();
+    const start = index * transferChunk;
+    const slice = await item.payload
+      .slice(start, start + fdChunkSize(size, index, transferChunk)).arrayBuffer();
     const block = await fdEncryptChunk(transferKey, item.serverId, index, new Uint8Array(slice));
 
     try {
       await putBlock(item, offset, block);
       offset += block.length;
       index += 1;
-      item.uploaded = Math.min(index * FD_CHUNK, size);
+      item.uploaded = Math.min(index * transferChunk, size);
       updateProgress(item);
       attempts = 0;
     } catch (err) {
@@ -269,9 +348,14 @@ async function uploadItem(item) {
 
 // --- Progression -------------------------------------------------------------
 
+/** Volume réellement transmis : après compression, il diffère de la taille des fichiers. */
+function storedSize(item) {
+  return item.stored ?? item.file.size;
+}
+
 function updateProgress(current) {
-  const total = totalSize();
-  const sent = queue.reduce((sum, item) => sum + Math.min(item.uploaded, item.file.size), 0);
+  const total = queue.reduce((sum, item) => sum + storedSize(item), 0);
+  const sent = queue.reduce((sum, item) => sum + Math.min(item.uploaded, storedSize(item)), 0);
   const ratio = total ? Math.min(sent / total, 1) : 0;
 
   ui.fill.style.width = `${ratio * 100}%`;
@@ -285,7 +369,7 @@ function updateProgress(current) {
     const row = ui.filelist.querySelector(`[data-key="${current.key}"]`);
     if (row) {
       row.querySelector('.bar i').style.width =
-        `${Math.round((current.uploaded / Math.max(current.file.size, 1)) * 100)}%`;
+        `${Math.round((current.uploaded / Math.max(storedSize(current), 1)) * 100)}%`;
       row.classList.toggle('done', current.done);
     }
   }
@@ -365,13 +449,22 @@ ui.send.addEventListener('click', async () => {
   try {
     transferKey = await fdGenerateKey();
 
+    transferChunk = chooseChunk();
+    await prepareQueue();
+    if (cancelled) throw abortError();
+
     // Noms, types et message ne quittent le navigateur que chiffres.
+    // `stored` est ce qui part réellement : après compression, il diffère de
+    // `size`, que le destinataire affiche et retrouve après décompression.
     const manifest = await fdEncryptManifest(transferKey, {
       message: ui.message.value.trim(),
+      chunk: transferChunk,
       files: queue.map((item) => ({
         name: item.file.name,
         type: item.file.type || 'application/octet-stream',
         size: item.file.size,
+        stored: item.stored,
+        compressed: item.compressed,
       })),
     });
 
@@ -380,7 +473,7 @@ ui.send.addEventListener('click', async () => {
       body: JSON.stringify({
         encrypted: true,
         manifest,
-        files: queue.map((item) => ({ size: fdEncryptedSize(item.file.size) })),
+        files: queue.map((item) => ({ size: fdEncryptedSize(item.stored, transferChunk) })),
         password: ui.password.value || null,
         expiryDays: Number(ui.expiry.value),
         maxDownloads: Number(ui.maxDownloads.value) || null,
@@ -391,10 +484,12 @@ ui.send.addEventListener('click', async () => {
     transfer = { id: created.id, ownerToken: created.ownerToken };
     created.files.forEach((file, i) => { queue[i].serverId = file.id; });
 
+    const debutEnvoi = Date.now();
     for (const item of queue) {
       if (cancelled) throw abortError();
       await uploadItem(item);
     }
+    rememberDebit(queue.reduce((s, i) => s + i.stored, 0), Date.now() - debutEnvoi);
 
     const done = await api(`/api/transfers/${transfer.id}/complete`, { method: 'POST' });
     transfer.url = `${done.url}#${await fdExportKey(transferKey)}`;
@@ -424,7 +519,10 @@ ui.send.addEventListener('click', async () => {
       if (transfer) api(`/api/transfers/${transfer.id}`, { method: 'DELETE' }).catch(() => {});
       transfer = null;
       transferKey = null;
-      queue.forEach((item) => { item.uploaded = 0; item.done = false; item.serverId = null; });
+      queue.forEach((item) => {
+    item.uploaded = 0; item.done = false; item.serverId = null;
+    item.payload = null; item.stored = undefined; item.compressed = false;
+  });
       renderQueue();
       showPanel('form');
       toast('Envoi annulé');
@@ -443,7 +541,10 @@ ui.cancel.addEventListener('click', () => {
   if (transfer) api(`/api/transfers/${transfer.id}`, { method: 'DELETE' }).catch(() => {});
   transfer = null;
   transferKey = null;
-  queue.forEach((item) => { item.uploaded = 0; item.done = false; item.serverId = null; });
+  queue.forEach((item) => {
+    item.uploaded = 0; item.done = false; item.serverId = null;
+    item.payload = null; item.stored = undefined; item.compressed = false;
+  });
   ui.cancel.hidden = true;
   hideError(ui.uploadError);
   renderQueue();
@@ -465,6 +566,7 @@ ui.newTransfer.addEventListener('click', () => {
   ui.password.value = '';
   ui.maxDownloads.value = '';
   ui.burn.checked = false;
+  ui.compress.checked = false;
   ui.maxDownloads.disabled = false;
   ui.cancel.hidden = true;
   renderQueue();

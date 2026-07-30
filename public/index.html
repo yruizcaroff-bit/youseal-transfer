@@ -6,8 +6,8 @@
 <title>YouSeal — Envoyer des fichiers</title>
 <meta name="description" content="Envoyez des fichiers scellés par un simple lien. Chiffré de bout en bout, sans compte.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/style.css?v=7">
-<script src="/theme.js?v=7"></script>
+<link rel="stylesheet" href="/style.css?v=8">
+<script src="/theme.js?v=8"></script>
 </head>
 <body>
 
@@ -111,6 +111,16 @@
             <p class="hint">Les fichiers sont effacés du serveur dès que le destinataire
               les a récupérés. Il n'aura qu'une seule occasion de le faire.</p>
           </div>
+
+          <div class="field">
+            <label class="check">
+              <input id="compress" type="checkbox">
+              <span>Compresser avant de chiffrer</span>
+            </label>
+            <p class="hint">Réduit ce qu'il y a à transmettre — souvent de moitié sur du texte
+              ou des documents, rien sur des photos et des vidéos, déjà compressées. Le taux
+              obtenu donne une indication sur la nature du contenu.</p>
+          </div>
         </div>
       </details>
 
@@ -203,11 +213,11 @@
   </div>
 </footer>
 
-<script src="/common.js?v=7"></script>
-<script src="/fdcrypto.js?v=7"></script>
-<script src="/qr.js?v=7"></script>
-<script src="/pair.js?v=7"></script>
-<script src="/history.js?v=7"></script>
-<script src="/app.js?v=7"></script>
+<script src="/common.js?v=8"></script>
+<script src="/fdcrypto.js?v=8"></script>
+<script src="/qr.js?v=8"></script>
+<script src="/pair.js?v=8"></script>
+<script src="/history.js?v=8"></script>
+<script src="/app.js?v=8"></script>
 </body>
 </html>
