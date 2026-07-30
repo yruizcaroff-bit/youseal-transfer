@@ -649,7 +649,7 @@ async function handle(req, res) {
   if (/^\/(conditions|contact|statistiques|soutien|transparence)\/?$/.test(pathname)) {
     return serveStatic(res, `${pathname.replace(/\//g, '')}.html`);
   }
-  if (/^\/(app|transfer|common|fdcrypto|zipstream|sw|stats|history|soutien|qr|pair|uptime)\.js$|^\/style\.css$|^\/favicon\.svg$|^\/og\.png$/.test(pathname)) {
+  if (/^\/(app|transfer|common|fdcrypto|zipstream|sw|stats|history|soutien|qr|pair|uptime|theme)\.js$|^\/style\.css$|^\/favicon\.svg$|^\/og\.png$/.test(pathname)) {
     return serveStatic(res, pathname.slice(1));
   }
 

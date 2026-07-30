@@ -5,9 +5,101 @@
   --text: #14211a;
   --muted: #5f6d65;
   --border: #dde3de;
+  --bg: #fff;
   --bg-soft: #f7f9f7;
+  --surface: #fff;
+  --prose: #3a463f;
+  --dash: #c6d0c9;
+  --placeholder: #9aa79f;
+
   --danger: #b3261e;
+  --danger-bg: #fbeceb;
+  --danger-border: #eccecb;
+
+  --warn-bg: #fdf8ee;
+  --warn-border: #e6cfa8;
+  --warn-rule: #b8860b;
+  --warn-text: #5c4813;
+  --warn-strong: #3d2f0a;
+
+  --toast-bg: #14211a;
+  --toast-text: #fff;
+  --on-green: #fff;
+
   --radius: 8px;
+}
+
+/*
+ * Thème sombre.
+ *
+ * Par défaut on suit le réglage du système ; le bouton de l'en-tête pose un
+ * attribut `data-theme` sur la racine, qui prime. Les déclarations sont écrites
+ * deux fois faute de pouvoir factoriser un jeu de sélecteurs en CSS simple.
+ *
+ * Le vert est éclairci : la teinte du mode clair passe sous le seuil de
+ * lisibilité sur fond foncé. Le QR code, lui, garde les couleurs imposées dans
+ * son SVG — un code inversé n'est pas lu par tous les lecteurs.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+  --green: #3ddc91;
+  --green-dark: #58e5a4;
+  --green-pale: #14281f;
+  --text: #e7ede9;
+  --muted: #94a29a;
+  --border: #2b332e;
+  --bg: #10140f;
+  --bg-soft: #171c19;
+  --surface: #161a17;
+  --prose: #c3cdc7;
+  --dash: #3a453e;
+  --placeholder: #6d7a72;
+
+  --danger: #ff7b72;
+  --danger-bg: #2a1a19;
+  --danger-border: #4a2b28;
+
+  --warn-bg: #241f14;
+  --warn-border: #4a3d22;
+  --warn-rule: #d4a017;
+  --warn-text: #e0cfa4;
+  --warn-strong: #f5e6c3;
+
+  --toast-bg: #e7ede9;
+  --toast-text: #10140f;
+  --on-green: #06120c;
+  
+  }
+}
+
+:root[data-theme="dark"] {
+  --green: #3ddc91;
+  --green-dark: #58e5a4;
+  --green-pale: #14281f;
+  --text: #e7ede9;
+  --muted: #94a29a;
+  --border: #2b332e;
+  --bg: #10140f;
+  --bg-soft: #171c19;
+  --surface: #161a17;
+  --prose: #c3cdc7;
+  --dash: #3a453e;
+  --placeholder: #6d7a72;
+
+  --danger: #ff7b72;
+  --danger-bg: #2a1a19;
+  --danger-border: #4a2b28;
+
+  --warn-bg: #241f14;
+  --warn-border: #4a3d22;
+  --warn-rule: #d4a017;
+  --warn-text: #e0cfa4;
+  --warn-strong: #f5e6c3;
+
+  --toast-bg: #e7ede9;
+  --toast-text: #10140f;
+  --on-green: #06120c;
+  
 }
 
 * { box-sizing: border-box; }
@@ -17,7 +109,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--bg);
   color: var(--text);
   font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
@@ -50,7 +142,7 @@ body {
   height: 26px;
   border-radius: 6px;
   background: var(--green);
-  color: #fff;
+  color: var(--on-green);
 }
 .topbar-note { color: var(--muted); font-size: 13px; text-decoration: none; }
 a.topbar-note:hover { color: var(--green); }
@@ -90,7 +182,7 @@ h1 {
   justify-items: center;
   gap: 4px;
   padding: 32px 16px;
-  border: 1px dashed #c6d0c9;
+  border: 1px dashed var(--dash);
   border-radius: var(--radius);
   background: var(--bg-soft);
   cursor: pointer;
@@ -119,7 +211,7 @@ h1 {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   font-size: 14px;
-  background: #fff;
+  background: var(--surface);
   color: inherit;
   text-align: left;
 }
@@ -143,7 +235,7 @@ h1 {
   border: 0; background: none; color: var(--muted);
   font-size: 20px; line-height: 1; padding: 2px 6px; cursor: pointer; border-radius: 4px;
 }
-.icon-btn:hover { color: var(--danger); background: #fbeceb; }
+.icon-btn:hover { color: var(--danger); background: var(--danger-bg); }
 
 .totals {
   display: flex; justify-content: space-between; align-items: center;
@@ -167,7 +259,7 @@ input, textarea, select {
   font: inherit;
   font-size: 14px;
   color: var(--text);
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 9px 11px;
@@ -178,7 +270,7 @@ input:focus, textarea:focus, select:focus {
   border-color: var(--green);
   box-shadow: 0 0 0 2px var(--green-pale);
 }
-input::placeholder, textarea::placeholder { color: #9aa79f; }
+input::placeholder, textarea::placeholder { color: var(--placeholder); }
 
 .check {
   display: flex;
@@ -191,13 +283,13 @@ input::placeholder, textarea::placeholder { color: #9aa79f; }
 
 .burn-notice {
   padding: 12px 14px;
-  border: 1px solid #e6cfa8;
-  border-left: 2px solid #b8860b;
-  background: #fdf8ee;
+  border: 1px solid var(--warn-border);
+  border-left: 2px solid var(--warn-rule);
+  background: var(--warn-bg);
   font-size: 13.5px;
-  color: #5c4813;
+  color: var(--warn-text);
 }
-.burn-notice b { color: #3d2f0a; }
+.burn-notice b { color: var(--warn-strong); }
 
 .options { border-top: 1px solid var(--border); padding-top: 14px; }
 .options > summary {
@@ -225,7 +317,7 @@ button { font: inherit; cursor: pointer; }
   padding: 11px 18px;
   font-size: 15px;
   font-weight: 500;
-  color: #fff;
+  color: var(--on-green);
   background: var(--green);
 }
 .primary:hover:not(:disabled) { background: var(--green-dark); border-color: var(--green-dark); }
@@ -239,13 +331,13 @@ button { font: inherit; cursor: pointer; }
   font-size: 14px;
   text-decoration: none;
   color: var(--text);
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
 }
 .ghost:hover { background: var(--bg-soft); }
 .ghost.danger { color: var(--danger); }
-.ghost.danger:hover { background: #fbeceb; border-color: #eccecb; }
+.ghost.danger:hover { background: var(--danger-bg); border-color: var(--danger-border); }
 
 /* ---------- progression ---------- */
 
@@ -318,8 +410,8 @@ button { font: inherit; cursor: pointer; }
   border-radius: 6px;
   font-size: 13.5px;
   color: var(--danger);
-  background: #fbeceb;
-  border: 1px solid #eccecb;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
 }
 
 /* ---------- page de reception ---------- */
@@ -360,8 +452,8 @@ button { font: inherit; cursor: pointer; }
   transform: translate(-50%, 12px);
   padding: 10px 16px;
   border-radius: 6px;
-  background: var(--text);
-  color: #fff;
+  background: var(--toast-bg);
+  color: var(--toast-text);
   font-size: 14px;
   opacity: 0;
   pointer-events: none;
@@ -421,7 +513,7 @@ button { font: inherit; cursor: pointer; }
 .live { display: inline-flex; align-items: center; gap: 7px; }
 .live i {
   width: 7px; height: 7px; border-radius: 50%;
-  background: #c6d0c9;
+  background: var(--dash);
 }
 .live.is-on i { background: var(--green); animation: pulse 2s ease-in-out infinite; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
@@ -450,7 +542,7 @@ button { font: inherit; cursor: pointer; }
   font-size: 16px;
   font-weight: 600;
 }
-.prose p, .prose li { color: #3a463f; font-size: 14.5px; }
+.prose p, .prose li { color: var(--prose); font-size: 14.5px; }
 .prose p { margin: 0 0 10px; }
 .prose ul { margin: 0 0 10px; padding-left: 20px; }
 .prose li { margin-bottom: 4px; }
@@ -491,3 +583,20 @@ button { font: inherit; cursor: pointer; }
   font-size: 14px;
   line-height: 1.55;
 }
+
+/* ---------- bascule de thème ---------- */
+
+.topbar-right { display: flex; align-items: center; gap: 14px; }
+
+.theme-toggle {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--muted);
+}
+.theme-toggle:hover { color: var(--green); border-color: var(--green); }
