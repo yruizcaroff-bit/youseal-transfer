@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Transparence — YouSeal</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/style.css?v=8">
-<script src="/theme.js?v=8"></script>
+<link rel="stylesheet" href="/style.css?v=9">
+<script src="/theme.js?v=9"></script>
 </head>
 <body>
 
@@ -89,15 +89,35 @@
     n'est plus vraie.
   </p>
 
+  <h2>Le code est public</h2>
+  <p>
+    L'intégralité du service est publiée sous licence MIT :
+    <a href="https://github.com/yruizcaroff-bit/youseal-transfer" rel="noopener">
+    github.com/yruizcaroff-bit/youseal-transfer</a>.
+  </p>
+  <p>
+    Rien n'y est minifié ni obscurci. Le chiffrement tient dans un seul fichier lisible,
+    <code>public/fdcrypto.js</code>, et c'est exactement celui que votre navigateur exécute :
+    vous pouvez comparer les deux.
+  </p>
+
   <h2>Vérifier par soi-même</h2>
   <ul>
-    <li>Les scripts de la page ne sont pas minifiés : le chiffrement est lisible dans
-        <code>/fdcrypto.js</code>, tel qu'il s'exécute.</li>
+    <li>Comparer les scripts servis par ce site à ceux du dépôt : ils doivent être identiques,
+        caractère pour caractère.</li>
     <li>Les outils de développement du navigateur, onglet Réseau, montrent que le fragment du
         lien n'est jamais transmis, et que les fichiers partent déjà chiffrés.</li>
     <li>L'<b>empreinte de la clé</b>, affichée à l'envoi comme à la réception, permet aux deux
         parties de constater qu'elles parlent bien du même lien.</li>
   </ul>
+  <p>
+    Une limite qu'il serait malhonnête de taire : c'est ce serveur qui vous envoie le code
+    chargé de chiffrer. S'il était compromis, il pourrait livrer une version modifiée <b>et</b>
+    prétendre qu'elle correspond au dépôt. La publication du code protège d'un intermédiaire —
+    un réseau de diffusion, un fournisseur d'accès — pas de l'exploitant lui-même. Aucun service
+    de chiffrement dans le navigateur n'échappe à cette réserve ; ceux qui ne la mentionnent pas
+    ne l'ont pas résolue pour autant.
+  </p>
 
   <p><a href="/conditions">Conditions d'utilisation</a> · <a href="/contact">Contact</a> ·
      <a href="/statistiques">Statistiques d'utilisation</a></p>
@@ -117,8 +137,8 @@
   </div>
 </footer>
 
-<script src="/common.js?v=8"></script>
-<script src="/stats.js?v=8"></script>
-<script src="/uptime.js?v=8"></script>
+<script src="/common.js?v=9"></script>
+<script src="/stats.js?v=9"></script>
+<script src="/uptime.js?v=9"></script>
 </body>
 </html>

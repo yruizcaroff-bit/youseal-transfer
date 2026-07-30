@@ -122,7 +122,7 @@ npm test
 ```
 
 Le lanceur démarre lui-même les serveurs dont il a besoin, sur un port et un
-stockage temporaires. **133 vérifications** : chiffrement de bout en bout,
+stockage temporaires. **157 vérifications** : chiffrement de bout en bout,
 restitution à l'identique, détection d'altération, reprise d'envoi, archives ZIP,
 QR code confronté aux tables de la norme, appairage, limites, purge, modération.
 
